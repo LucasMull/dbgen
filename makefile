@@ -15,4 +15,4 @@ columns.o : columns.c columns.h
 	gcc -c columns.c $(CFLAGS)
 .PHONY : clean
 clean :
-	-rm exec $(OBJ)
+	-rm people people.csv $(OBJ)
