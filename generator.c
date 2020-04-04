@@ -7,7 +7,7 @@
 #include <time.h>
 
 /*Initialize BLOCK in a HEAP, and assign it's address to an index in the HEAP,
-the maximum amount of BLOCKS that can be created is defined in MEMSIZE*/
+the maximum amount of BLOCKS that can be created is defined in TOTAL_BLOCKS*/
 void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP, int digits)
 {
     static size_t i = 0;
