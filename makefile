@@ -1,14 +1,14 @@
 CFLAGS	= -Wall -Werror -pedantic
 LDLIBS = -lm
 
-OBJ = generate_people.o generator.o columns.o
+OBJ = main.o generator.o columns.o
 
 all : people
 
 people : $(OBJ)
 	gcc -o people $(OBJ) $(LDLIBS)
-generator_people.o : generate_people.c generator.h columns.h
-	gcc -c generate_people.c $(CFLAGS)
+generator_people.o : main.c generator.h columns.h
+	gcc -c main.c $(CFLAGS)
 generator.o : generator.c generator.h
 	gcc -c generator.c $(CFLAGS)
 columns.o : columns.c columns.h
