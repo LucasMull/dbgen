@@ -7,7 +7,7 @@ all : people
 
 people : $(OBJ)
 	gcc -o people $(OBJ) $(LDLIBS)
-generator_people.o : main.c generator.h columns.h
+main.o : main.c generator.h columns.h
 	gcc -c main.c $(CFLAGS)
 generator.o : generator.c generator.h
 	gcc -c generator.c $(CFLAGS)
