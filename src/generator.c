@@ -22,6 +22,7 @@ void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP, int digits)
     HEAP->size = i;
     HEAP->addr[i++] = BLOCK;
 }
+
 /*Free pointers allocated to the particular block
   first_i = n - means all pointers from index n up to BLOCK->size will be free'd,*/
 void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
@@ -30,7 +31,7 @@ void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
 
     if ( BLOCK->data == NULL ){
         fprintf(stderr,"Block already emptied\n");
-        return;
+        exit(1);
     }
 
     temp = BLOCK->size; 
@@ -47,21 +48,25 @@ void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
 /*Read file and store each line as an element to the array of strings*/
 void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK)
 {
+    size_t i;
+
+    i = 0;
     while( !feof(f_read) ){
-        BLOCK->data = (char**)realloc(BLOCK->data, sizeof(char*)*(BLOCK->size+1));
+        BLOCK->data = (char**)realloc(BLOCK->data, sizeof(char*)*(i+1));
         if ( BLOCK->data == NULL ) {
             fprintf(stderr,"Couldn't malloc\n");
             exit(1);
         }
-        BLOCK->data[BLOCK->size] = (char*)malloc(sizeof(char)*STRLENGTH);
-        if ( BLOCK->data[BLOCK->size] == NULL ) {
+        BLOCK->data[i] = (char*)malloc(sizeof(char)*STRLENGTH);
+        if ( BLOCK->data[i] == NULL ) {
             fprintf(stderr,"Couldn't malloc\n");
             exit(1);
         }
-        fgets(BLOCK->data[BLOCK->size], STRLENGTH-1, f_read);
-        BLOCK->data[BLOCK->size][strlen(BLOCK->data[BLOCK->size])-1] = '\0';
-        ++BLOCK->size;
+        fgets(BLOCK->data[i], STRLENGTH-1, f_read);
+        BLOCK->data[i][strlen(BLOCK->data[i])-1] = '\0';
+        ++i;
     }
+    BLOCK->size = i;
 }
 
 /*Store unique random values from a given scope, at a specified amount of elements*/
