@@ -37,7 +37,7 @@ int main(void)
     
     initBLOCK(&b_name, &HEAP, 0); //init and assign b_name to HEAP.addr[0]
     initBLOCK(&b_surnam, &HEAP, 0); //init and assign b_surnam to HEAP.addr[1]
-    initBLOCK(&b_ID, &HEAP, 7); //init and assign b_ID to HEAP.addr[2]
+    initBLOCK(&b_ID, &HEAP, 12); //init and assign b_ID to HEAP.addr[2]
     initBLOCK(&b_agency, &HEAP, 6); //init and assign b_agency to HEAP.addr[3]
 
     f_name = fopen("content/nomes.txt", "r"); 

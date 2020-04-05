@@ -9,7 +9,10 @@ OBJS += $(OBJDIR)/columns.o
 
 MAIN = $(OBJDIR)/main.o
 
-$(info objs: $(OBJS))
+#remove comment to activate debug
+#$(info objs: $(OBJS))
+
+.PHONY : clean all
 
 all: run
 
@@ -27,6 +30,5 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	gcc -c $< -o $@
 
 
-.PHONY : clean
 clean :
 	-rm -r run data.csv $(OBJDIR)
