@@ -10,6 +10,7 @@
 
 #define AGENCYSIZE 10000
 
+
 int main(void)
 {
     srand(time(NULL)); //generate unique seed for generator on each run
@@ -19,6 +20,8 @@ int main(void)
     FILE *f_name; //list of brazilian names
     FILE *f_surnam; //list of brazilian surnames
     FILE *f_out; //generated individuals
+
+    size_t i;    
 
     t_DB database;
     t_HEAP HEAP;
@@ -52,11 +55,11 @@ int main(void)
     randNumToBLOCK(HEAP.addr[2], 1, DBSIZE, UNDEFINED);
     randNumToBLOCK(HEAP.addr[3], 1, AGENCYSIZE, 5);
     
-    f_out = fopen("people.csv", "a");
+    f_out = fopen("data.csv", "a");
     getUsers(f_out, HEAP.addr, &database);
     fclose(f_out);
 
-    for ( size_t i=0; i<=HEAP.size; ++i )
+    for ( i=0; i<=HEAP.size; ++i )
         freeBLOCK(HEAP.addr[i], 0);
 
     return 0;
