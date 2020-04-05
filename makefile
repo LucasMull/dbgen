@@ -7,6 +7,8 @@ OBJS =  $(OBJDIR)/main.o
 OBJS += $(OBJDIR)/generator.o
 OBJS += $(OBJDIR)/columns.o
 
+MAIN = $(OBJDIR)/main.o
+
 $(info objs: $(OBJS))
 
 all: run
@@ -14,10 +16,14 @@ all: run
 run: build
 	gcc -o $@ $(OBJS) $(LDLIBS) $(CFLAGS)
 
-build: $(OBJS)
+build: mkdir $(MAIN) $(OBJS)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
+mkdir:
 	-mkdir -p $(OBJDIR)
+
+$(MAIN): main.c
+	gcc -c $< -o $@
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
 	gcc -c $< -o $@
 
 

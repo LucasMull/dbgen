@@ -1,5 +1,5 @@
-#include "generator.h"
-#include "columns.h"
+#include "src/generator.h"
+#include "src/columns.h"
 
 #include <stdio.h>
 #include <stdlib.h>
