@@ -17,23 +17,10 @@ run: build
 build: $(OBJS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
+	-mkdir -p $(OBJDIR)
 	gcc -c $< -o $@
 
 
 .PHONY : clean
 clean :
-	-rm run data.csv $(OBJS)
-
-#all : generate
-
-#generate : $(OBJS)
-#	gcc -o generate $(OBJS) $(LDLIBS)
-#main.o : main.c generator.h columns.h
-#	gcc -c main.c $(CFLAGS)
-#generator.o : generator.c generator.h
-#	gcc -c generator.c $(CFLAGS)
-#columns.o : columns.c columns.h
-#	gcc -c columns.c $(CFLAGS)
-#.PHONY : clean
-#clean :
-#	-rm generate data.csv $(OBJS)
+	-rm -r run data.csv $(OBJDIR)
