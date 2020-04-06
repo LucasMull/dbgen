@@ -75,9 +75,10 @@ ex: 1000 to 2000; amount of elements wanted = 5
 
 pad = scope / amount , which translates to 1000/5 = 200
 pad = 200 , means it will decrement from 2000 to 1000, 
-        lowering the value of the last element by 200 each run (last -= pad), until last <= first
+    lowering the value of the last element by 200 each run (last -= pad), until last <= first
 
-rand() used in each padding, from a range of last to last+pad makes sure each random number is unique, but also lower than the one before it
+rand() used in each padding, from a range of last to last+pad makes sure each random number 
+    is unique, but also lower than the previous one
 */
 void NumsToBLOCK(t_BLOCK *BLOCK, int first, int last, size_t amount)
 {
