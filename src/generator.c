@@ -90,13 +90,21 @@ void NumsToBLOCK(t_BLOCK *BLOCK, int first, int last, size_t amount)
         fprintf(stderr, "Invalid elements amount (>=0)\n");
         exit(1);
     }
-    last -= pad;
 
-    BLOCK->data = (char**)malloc(sizeof(char*)*(amount));
+    BLOCK->data = (char**)malloc(sizeof(char*)*amount);
+    if (BLOCK->data == NULL){
+        fprintf(stderr,"Couldn't malloc\n");
+        exit(1);
+    }
     BLOCK->size = amount;
 
+    last -= pad;
     while ( amount-- > 0 ) {
         BLOCK->data[amount] = (char*)malloc(sizeof(char)*BLOCK->digits);
+        if (BLOCK->data[amount] == NULL){
+            fprintf(stderr,"Couldn't malloc\n");
+            exit(1);
+        }
         snprintf(BLOCK->data[amount],BLOCK->digits-1,"%d",last+rand()%pad);
         last -= pad;
     }
