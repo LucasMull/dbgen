@@ -6,8 +6,8 @@
 #include <string.h>
 #include <time.h>
 
-/*Initialize BLOCK in a HEAP, and assign it's address to an index in the HEAP,
-the maximum amount of BLOCKS that can be created is defined in TOTAL_BLOCKS*/
+//Initialize BLOCK in a HEAP, and assign it's address to an index in the HEAP,
+//the maximum amount of BLOCKS that can be created is defined in TOTAL_BLOCKS
 void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP, int digits)
 {
     static size_t i = 0;
@@ -23,8 +23,8 @@ void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP, int digits)
     HEAP->addr[i++] = BLOCK;
 }
 
-/*Free pointers allocated to the particular block
-  first_i = n - means all pointers from index n up to BLOCK->size will be free'd,*/
+//Free pointers allocated to the particular block
+//first_i = n - means all pointers from index n up to BLOCK->size will be free'd
 void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
 {
     size_t i, temp;
@@ -45,7 +45,7 @@ void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
         free(BLOCK->data);
 }
 
-/*Read file and store each line as an element to the array of strings*/
+//Read file and store each line as a string value of index n in the array
 void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK)
 {
     size_t i;
@@ -69,31 +69,34 @@ void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK)
     BLOCK->size = i;
 }
 
-/*Store unique random values from a given scope, at a specified amount of elements*/
-void randNumToBLOCK(t_BLOCK *BLOCK, int start, int scope, size_t amount)
+/*
+Storages numbers proportionally to the scope (last - first) provided, by making use of a 'padding' tool
+ex: 1000 to 2000; amount of elements wanted = 5
+
+pad = scope / amount , which translates to 1000/5 = 200
+pad = 200 , means it will decrement from 2000 to 1000, 
+        lowering the value of the last element by 200 each run (last -= pad), until last <= first
+
+rand() used in each padding, from a range of last to last+pad makes sure each random number is unique, but also lower than the one before it
+*/
+void NumsToBLOCK(t_BLOCK *BLOCK, int first, int last, size_t amount)
 {
-    size_t i;
-    scope -= start; 
+    int pad;
     
-
-    BLOCK->data = (char**)malloc(sizeof(char*)*(1+scope));
-    for ( i=0; i<=scope; ++i ){
-        BLOCK->data[i] = (char*)malloc(sizeof(char)*BLOCK->digits);
-        snprintf(BLOCK->data[i],BLOCK->digits-1,"%d",start++);
-        ++BLOCK->size;
-    }
-
-
-    if ( amount > scope ){
-        fprintf(stderr,"Amount is bigger than scope\n");
+    if ( amount > 0 ) {
+        pad = (last-first)/amount;
+    } else {
+        fprintf(stderr, "Invalid elements amount (>=0)\n");
         exit(1);
-    } else if ( amount == 0 ) {
-        amount = scope;
     }
+    last -= pad;
 
-    for ( i=0; i<=amount; ++i ) //shuffle
-        stringSwap(BLOCK->data+i, BLOCK->data+rand()%scope);
+    BLOCK->data = (char**)malloc(sizeof(char*)*(amount));
+    BLOCK->size = amount;
 
-    if ( amount != scope )
-        freeBLOCK(BLOCK, amount);
+    while ( amount-- > 0 ) {
+        BLOCK->data[amount] = (char*)malloc(sizeof(char)*BLOCK->digits);
+        snprintf(BLOCK->data[amount],BLOCK->digits-1,"%d",last+rand()%pad);
+        last -= pad;
+    }
 }

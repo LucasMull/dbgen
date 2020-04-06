@@ -52,8 +52,8 @@ int main(void)
     fileToBLOCK(f_surnam, HEAP.addr[1]);    
     fclose(f_surnam);
   
-    randNumToBLOCK(HEAP.addr[2], 1, DBSIZE, UNDEFINED);
-    randNumToBLOCK(HEAP.addr[3], 1, AGENCYSIZE, 5);
+    NumsToBLOCK(HEAP.addr[2], 700000000, 900000000, DBSIZE);
+    NumsToBLOCK(HEAP.addr[3], 1, AGENCYSIZE, 5);
     
     f_out = fopen("data.csv", "a");
     getUsers(f_out, HEAP.addr, &database);

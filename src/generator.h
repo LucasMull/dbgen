@@ -4,7 +4,7 @@
 #define NAMELENGTH 50
 
 #define TOTAL_BLOCKS 5
-#define STRLENGTH 15
+#define STRLENGTH 25
 #define UNDEFINED 0
 
 
@@ -20,7 +20,7 @@ typedef struct HEAP {
 } t_HEAP;
 
 typedef struct user {
-    char ID[7];
+    char ID[12];
     char agency[5];
     char account[5];
     char fullname[NAMELENGTH];
@@ -36,7 +36,6 @@ void freeBLOCK(t_BLOCK *BLOCK, size_t first_i);
 
 void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK);
 
-void randNumToBLOCK(t_BLOCK *BLOCK, int start, int scope, size_t amount);
+void NumsToBLOCK(t_BLOCK *BLOCK, int start, int scope, size_t amount);
 
 void stringSwap(char **str1_ptr, char **str2_ptr);
-
