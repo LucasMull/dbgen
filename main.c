@@ -10,6 +10,7 @@
 
 #define AGENCYSIZE 10000
 
+void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database);
 
 int main(void)
 {
@@ -56,7 +57,7 @@ int main(void)
     NumsToBLOCK(HEAP.addr[3], 1000, AGENCYSIZE, 5);
     
     f_out = fopen("data.csv", "a");
-    getUsers(f_out, HEAP.addr, &database);
+    getUsers(f_out, HEAP.addr, &database); //the brain
     fclose(f_out);
 
     for ( i=0; i<=HEAP.size; ++i )
@@ -64,3 +65,29 @@ int main(void)
 
     return 0;
 }
+
+//This function needs to be updated and be made into a new library, not modularized enough, basically compiles every information and print output into file
+void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database)
+{
+    size_t i;
+    char *str1, *str2;
+    
+    shuffleArray(addr[1]);
+    shuffleArray(addr[2]);
+    for ( i=0; i<DBSIZE; ++i ){
+        str1 = pickRandomDATA(addr[0]);
+        str2 = pickRandomDATA(addr[1]);
+        joinStrings(database->subject[i].attribute_3,str1,str2);
+        if (strlen(str2) <= 3){
+            str2 = pickRandomDATA(addr[1]);
+            joinStrings(database->subject[i].attribute_3,database->subject[i].attribute_3,str2);
+        }
+        fetchLinearDATA(database->subject[i].attribute_0, addr[2], i);
+        fetchRandomDATA(database->subject[i].attribute_1, addr[3]);
+
+        fprintf(f_out,"%s,%s,%s\n", database->subject[i].attribute_0, 
+                                    database->subject[i].attribute_1,
+                                    database->subject[i].attribute_3); 
+    }
+}
+

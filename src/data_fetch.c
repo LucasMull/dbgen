@@ -17,6 +17,7 @@ void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP, int digits)
         exit(1);
     }
     BLOCK->size = 0;
+    BLOCK->heap_id = i;
     BLOCK->digits = digits;
     
     HEAP->size = i;
@@ -29,10 +30,7 @@ void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
 {
     size_t i, temp;
 
-    if ( BLOCK->data == NULL ){
-        fprintf(stderr,"Block already emptied\n");
-        exit(1);
-    }
+    if (badAlloc(BLOCK->data)) exit(1);
 
     temp = BLOCK->size; 
     for ( i=first_i; i < BLOCK->size; ++i ){
@@ -53,15 +51,11 @@ void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK)
     i = 0;
     while( !feof(f_read) ){
         BLOCK->data = (char**)realloc(BLOCK->data, sizeof(char*)*(i+1));
-        if ( BLOCK->data == NULL ) {
-            fprintf(stderr,"Couldn't malloc\n");
-            exit(1);
-        }
+        if (badAlloc(BLOCK->data)) exit(1);
+        
         BLOCK->data[i] = (char*)malloc(sizeof(char)*STRLENGTH);
-        if ( BLOCK->data[i] == NULL ) {
-            fprintf(stderr,"Couldn't malloc\n");
-            exit(1);
-        }
+        if (badAlloc(BLOCK->data)) exit(1);
+        
         fgets(BLOCK->data[i], STRLENGTH-1, f_read);
         BLOCK->data[i][strlen(BLOCK->data[i])-1] = '\0';
         ++i;
@@ -92,20 +86,25 @@ void NumsToBLOCK(t_BLOCK *BLOCK, int first, int last, size_t amount)
     }
 
     BLOCK->data = (char**)malloc(sizeof(char*)*amount);
-    if (BLOCK->data == NULL){
-        fprintf(stderr,"Couldn't malloc\n");
-        exit(1);
-    }
+    if (badAlloc(BLOCK->data)) exit(1);
+
     BLOCK->size = amount;
 
     last -= pad;
     while ( amount-- > 0 ) {
         BLOCK->data[amount] = (char*)malloc(sizeof(char)*BLOCK->digits);
-        if (BLOCK->data[amount] == NULL){
-            fprintf(stderr,"Couldn't malloc\n");
-            exit(1);
-        }
+        if (badAlloc(BLOCK->data)) exit(1);
+
         snprintf(BLOCK->data[amount],BLOCK->digits-1,"%d",last+rand()%pad);
         last -= pad;
     }
+}
+
+int badAlloc(void *ptr)
+{
+    if (ptr == NULL){
+        fprintf(stderr,"Couldn't malloc\n");
+        return 1;
+    }
+    return 0;
 }

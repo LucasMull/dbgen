@@ -44,31 +44,6 @@ void fetchRandomDATA(char dest[], t_BLOCK *BLOCK){
     snprintf(dest,BLOCK->digits-1,"%s",BLOCK->data[rand()%BLOCK->size]);
 }
 
-//Need update, not modularized enough, basically compiles every information and print output into file
-void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database)
-{
-    size_t i;
-    char *str1, *str2;
-    
-    shuffleArray(addr[1]);
-    shuffleArray(addr[2]);
-    for ( i=0; i<DBSIZE; ++i ){
-        str1 = pickRandomDATA(addr[0]);
-        str2 = pickRandomDATA(addr[1]);
-        joinStrings(database->user[i].fullname,str1,str2);
-        if (strlen(str2) <= 3){
-            str2 = pickRandomDATA(addr[1]);
-            joinStrings(database->user[i].fullname,database->user[i].fullname,str2);
-        }
-        fetchLinearDATA(database->user[i].ID, addr[2], i);
-        fetchRandomDATA(database->user[i].agency, addr[3]);
-
-        fprintf(f_out,"%s,%s,%s\n", database->user[i].ID, 
-                                    database->user[i].agency,
-                                    database->user[i].fullname); 
-    }
-}
-
 //Pretty straightforward, swaps two string pointers
 void stringSwap(char **str1_ptr, char **str2_ptr)
 {
