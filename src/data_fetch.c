@@ -1,4 +1,4 @@
-#include "generator.h"
+#include "data_fetch.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +24,7 @@ void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP, int digits)
 }
 
 //Free pointers allocated to the particular block
-//first_i = n - means all pointers from index n up to BLOCK->size will be free'd
+//EX: first_i = j , means all pointers from index j up to BLOCK->size will be free'd
 void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
 {
     size_t i, temp;
@@ -45,7 +45,7 @@ void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
         free(BLOCK->data);
 }
 
-//Read file and store each line as a string value of index n in the array
+//Read file and store each line as a string value of index i in the array
 void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK)
 {
     size_t i;
@@ -70,7 +70,7 @@ void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK)
 }
 
 /*
-Storages numbers proportionally to the scope (last - first) provided, by making use of a 'padding' tool
+Stores numbers proportionally to the scope (last - first) provided, by making use of a 'padding' tool
 ex: 1000 to 2000; amount of elements wanted = 5
 
 pad = scope / amount , which translates to 1000/5 = 200

@@ -4,8 +4,8 @@ SRCDIR = src
 OBJDIR = obj
 
 OBJS =  $(OBJDIR)/main.o
-OBJS += $(OBJDIR)/generator.o
-OBJS += $(OBJDIR)/columns.o
+OBJS += $(OBJDIR)/data_fetch.o
+OBJS += $(OBJDIR)/manipulate_data.o
 
 MAIN = $(OBJDIR)/main.o
 

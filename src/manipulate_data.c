@@ -1,5 +1,5 @@
-#include "generator.h"
-#include "columns.h"
+#include "data_fetch.h"
+#include "manipulate_data.h"
 
 #include <stdio.h>
 #include <stdlib.h>
