@@ -7,8 +7,9 @@
 #include <string.h>
 #include <time.h>
 
-
-#define AGENCYSIZE 10000
+#define IDSIZE 999999999
+#define AGENCYSIZE 99999 
+#define ACCOUNTSIZE 99999
 
 void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database);
 
@@ -26,7 +27,7 @@ int main(void)
 
     t_DB database;
     t_HEAP HEAP;
-    t_BLOCK b_name, b_surnam, b_ID, b_agency;
+    t_BLOCK b_name, b_surnam, b_ID, b_agency, b_account;
 
     
     if ( !locale ){
@@ -39,7 +40,8 @@ int main(void)
     initBLOCK(&b_name, &HEAP, 0); //init and assign b_name to HEAP.addr[0]
     initBLOCK(&b_surnam, &HEAP, 0); //init and assign b_surnam to HEAP.addr[1]
     initBLOCK(&b_ID, &HEAP, 12); //init and assign b_ID to HEAP.addr[2]
-    initBLOCK(&b_agency, &HEAP, 6); //init and assign b_agency to HEAP.addr[3]
+    initBLOCK(&b_agency, &HEAP, 7); //init and assign b_agency to HEAP.addr[3]
+    initBLOCK(&b_account, &HEAP, 7); //init and assign b_agency to HEAP.addr[4]
 
     f_name = fopen("content/nomes.txt", "r"); 
     f_surnam = fopen("content/sobrenomes.txt", "r"); 
@@ -53,8 +55,9 @@ int main(void)
     fileToBLOCK(f_surnam, HEAP.addr[1]);    
     fclose(f_surnam);
   
-    NumsToBLOCK(HEAP.addr[2], 700000000, 900000000, DBSIZE);
-    NumsToBLOCK(HEAP.addr[3], 1000, AGENCYSIZE, 5);
+    NumsToBLOCK(HEAP.addr[2], 700000000, IDSIZE, DBSIZE);
+    NumsToBLOCK(HEAP.addr[3], 10000, AGENCYSIZE, 5);
+    NumsToBLOCK(HEAP.addr[4], 10000, ACCOUNTSIZE, DBSIZE);
     
     f_out = fopen("data.csv", "a");
     getUsers(f_out, HEAP.addr, &database); //the brain
@@ -84,10 +87,12 @@ void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database)
         }
         fetchLinearDATA(database->subject[i].attribute_0, addr[2], i);
         fetchRandomDATA(database->subject[i].attribute_1, addr[3]);
+        fetchRandomDATA(database->subject[i].attribute_2, addr[4]);
 
-        fprintf(f_out,"%s,%s,%s\n", database->subject[i].attribute_0, 
-                                    database->subject[i].attribute_1,
-                                    database->subject[i].attribute_3); 
+        fprintf(f_out,"%s,%s,%s,%s\n",database->subject[i].attribute_0, 
+                                      database->subject[i].attribute_1,
+                                      database->subject[i].attribute_2,
+                                      database->subject[i].attribute_3); 
     }
 }
 

@@ -78,7 +78,13 @@ void NumsToBLOCK(t_BLOCK *BLOCK, int first, int last, size_t amount)
 {
     int pad;
     
-    if ( amount > 0 ) {
+    if ( last < first ) {
+        fprintf(stderr, "Last index is lesser than first\n");
+        exit(1);
+    } else if ( amount > (last-first) ) {
+        amount = (last-first);
+        pad = 1;
+    } else if ( amount > 0 ) {
         pad = (last-first)/amount;
     } else {
         fprintf(stderr, "Invalid elements amount (>=0)\n");

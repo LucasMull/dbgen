@@ -1,9 +1,9 @@
 #include <stdio.h>
 
-#define DBSIZE 100000
+#define DBSIZE 1000
 #define LENGTH_0 12
-#define LENGTH_1 5
-#define LENGTH_2 5
+#define LENGTH_1 6
+#define LENGTH_2 6
 #define LENGTH_3 50
 
 #define TOTAL_BLOCKS 5
