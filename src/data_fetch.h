@@ -25,8 +25,8 @@ typedef struct HEAP {
 
 typedef struct subject {
     char attribute_0[LENGTH_0];
-    char attribute_1[LENGTH_1];
-    char attribute_2[LENGTH_2];
+    char *attribute_1;
+    char *attribute_2;
     char attribute_3[LENGTH_3];
     // create or remove attributes as needed
 } t_subj;

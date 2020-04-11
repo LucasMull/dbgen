@@ -11,6 +11,8 @@
 #define AGENCYSIZE 99999 
 #define ACCOUNTSIZE 99999
 
+/* PAROU TENTANDO DESCOBRIR COMO FAZER PRA IMPRIMIR AGENCIA E CONTA LINKADOS*/
+
 void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database);
 
 int main(void)
@@ -41,7 +43,7 @@ int main(void)
     initBLOCK(&b_surnam, &HEAP, 0); //init and assign b_surnam to HEAP.addr[1]
     initBLOCK(&b_ID, &HEAP, 12); //init and assign b_ID to HEAP.addr[2]
     initBLOCK(&b_agency, &HEAP, 7); //init and assign b_agency to HEAP.addr[3]
-    initBLOCK(&b_account, &HEAP, 7); //init and assign b_agency to HEAP.addr[4]
+    initBLOCK(&b_account, &HEAP, 7); //init and assign b_account to HEAP.addr[4]
 
     f_name = fopen("content/nomes.txt", "r"); 
     f_surnam = fopen("content/sobrenomes.txt", "r"); 
@@ -72,27 +74,57 @@ int main(void)
 //This function needs to be updated and be made into a new library, not modularized enough, basically compiles every information and print output into file
 void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database)
 {
-    size_t i;
+    t_assign parent[addr[3]->size];
+
+    char *child;
     char *str1, *str2;
+    size_t i, rand_i;
     
-    shuffleArray(addr[1]);
-    shuffleArray(addr[2]);
+    for ( i=0; i < addr[3]->size; ++i ){
+        parent[i].start = NULL;
+        parent[i].end = NULL;
+        initAssign(&parent[i], addr[3]->data[i]);
+    }
+    
+    shuffleArray(addr[2]);    
     for ( i=0; i<DBSIZE; ++i ){
-        str1 = pickRandomDATA(addr[0]);
-        str2 = pickRandomDATA(addr[1]);
+        str1 = pickRandom(addr[0]);
+        str2 = pickRandom(addr[1]);
         joinStrings(database->subject[i].attribute_3,str1,str2);
         if (strlen(str2) <= 3){
-            str2 = pickRandomDATA(addr[1]);
+            str2 = pickRandom(addr[1]);
             joinStrings(database->subject[i].attribute_3,database->subject[i].attribute_3,str2);
         }
-        fetchLinearDATA(database->subject[i].attribute_0, addr[2], i);
-        fetchRandomDATA(database->subject[i].attribute_1, addr[3]);
-        fetchRandomDATA(database->subject[i].attribute_2, addr[4]);
+        fetchLinear(database->subject[i].attribute_0, addr[2], i);
 
-        fprintf(f_out,"%s,%s,%s,%s\n",database->subject[i].attribute_0, 
+        rand_i = rand() % addr[3]->size;
+        while ( !(child=uniqueChild(parent+rand_i, pickRandom(addr[4])) ) );
+        database->subject[i].attribute_2 = child;
+        assignChild(parent+rand_i,child);
+        database->subject[i].attribute_1 = parent[rand_i].data;
+    }
+   
+    // PRINTS DATABASE TO OUTPUT STREAM 
+    for ( i=0; i<DBSIZE; ++i ){
+        fprintf(f_out,"%s,%s,%s,%s\n",database->subject[i].attribute_0,
                                       database->subject[i].attribute_1,
                                       database->subject[i].attribute_2,
                                       database->subject[i].attribute_3); 
     }
+    /* PRINTS PARENTS AND ITS CHILDREN FOR DEBUGGING
+    t_node *aux;
+    for ( i=0; i<addr[3]->size; ++i ){
+        fprintf(stderr, "%ld: %s: %i\n", i, parent[i].data, parent[i].size);
+        aux = parent[i].start->next;
+        while ( aux != parent[i].end ){
+            fprintf(stderr, "\t%s\n", aux->data);
+            aux = aux->next;
+        }
+    }
+    */
+
+    //ERASES EVERY FAMILY
+    for ( i=0; i<addr[3]->size; ++i )
+        eraseFamily(parent+i);
 }
 
