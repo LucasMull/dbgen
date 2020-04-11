@@ -78,7 +78,7 @@ void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database)
 
     char *child;
     char *str1, *str2;
-    size_t i, rand_i;
+    size_t i, rand_i, rand_j;
     
     for ( i=0; i < addr[3]->size; ++i ){
         parent[i].start = NULL;
@@ -98,7 +98,10 @@ void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database)
         fetchLinear(database->subject[i].attribute_0, addr[2], i);
 
         rand_i = rand() % addr[3]->size;
-        while ( !(child=uniqueChild(parent+rand_i, pickRandom(addr[4])) ) );
+        rand_j = rand() % addr[4]->size;
+        // UGLY WHILE() INCOMING
+        while ((rand_j < addr[4]->size) && !(child = uniqueChild(parent+rand_i, addr[4]->data[rand_j++])) );
+        // SORRY
         database->subject[i].attribute_2 = child;
         assignChild(parent+rand_i,child);
         database->subject[i].attribute_1 = parent[rand_i].data;
