@@ -12,7 +12,7 @@
 #define AGENCYSIZE 99999 
 #define ACCOUNTSIZE 99999
 
-void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database);
+void getUsers(FILE* f_out, t_BLOCK *addr[]);
 
 int main(void)
 {
@@ -26,7 +26,6 @@ int main(void)
 
     size_t i;    
 
-    t_DB database;
     t_HEAP HEAP;
     t_BLOCK b_name, b_surnam, b_ID, b_agency, b_account;
 
@@ -51,17 +50,18 @@ int main(void)
     if ( !f_surnam )
         fprintf(stderr,"Couldn't open sobrenomes.txt");
 
-    fileToBLOCK(f_name, HEAP.addr[0]);
-    fclose(f_name);    
-    fileToBLOCK(f_surnam, HEAP.addr[1]);    
-    fclose(f_surnam);
   
+    fileToBLOCK(f_name, HEAP.addr[0]);
+    fileToBLOCK(f_surnam, HEAP.addr[1]);    
     NumsToBLOCK(HEAP.addr[2], 700000000, IDSIZE, DBSIZE);
     NumsToBLOCK(HEAP.addr[3], 10000, AGENCYSIZE, 5);
     NumsToBLOCK(HEAP.addr[4], 10000, ACCOUNTSIZE, DBSIZE);
     
+    fclose(f_name);    
+    fclose(f_surnam);
+
     f_out = fopen("data.csv", "a");
-    getUsers(f_out, HEAP.addr, &database); //the brain
+    getUsers(f_out, HEAP.addr); //the brain
     fclose(f_out);
 
     for ( i=0; i<=HEAP.size; ++i )
@@ -71,9 +71,10 @@ int main(void)
 }
 
 //This function needs to be updated and be made into a new library, not modularized enough, basically compiles every information and print output into file
-void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database)
+void getUsers(FILE* f_out, t_BLOCK *addr[])
 {
     t_tree T[addr[3]->size];    
+    t_subj subject;
 
     char *child;
     char *str1, *str2;
@@ -86,14 +87,14 @@ void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database)
     shuffleArray(addr[2]);    
     for ( i=0; i<DBSIZE; ++i ){
         // THIS CREATES ATTRIBUTE 1
-        fetchLinear(database->subject[i].attribute_0, addr[2], i);
+        fetchLinear(subject.attribute_0, addr[2], i);
         // THIS CREATES ATTRIBUTE 3
         str1 = pickRandom(addr[0]);
         str2 = pickRandom(addr[1]);
-        joinStrings(database->subject[i].attribute_3,str1,str2);
+        joinStrings(subject.attribute_3,str1,str2);
         if (strlen(str2) <= 3){
             str2 = pickRandom(addr[1]);
-            joinStrings(database->subject[i].attribute_3,database->subject[i].attribute_3,str2);
+            joinStrings(subject.attribute_3,subject.attribute_3,str2);
         }
 
         //THIS CREATES ATTRIBUTE 1 AND 2 (1 is a requisite for 2)
@@ -104,17 +105,16 @@ void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database)
             ++rand_j;
         } insertChild(T+rand_i, child);
 
-        database->subject[i].attribute_1 = addr[3]->data[rand_i];
-        database->subject[i].attribute_2 = child; 
+        subject.attribute_1 = addr[3]->data[rand_i];
+        subject.attribute_2 = child;
+         
+        // PRINTS DATABASE TO OUTPUT STREAM 
+        fprintf(f_out,"%s,%s,%s,%s\n",subject.attribute_0,
+                                      subject.attribute_1, 
+                                      subject.attribute_2, 
+                                      subject.attribute_3); 
     }
 
-    // PRINTS DATABASE TO OUTPUT STREAM 
-    for ( i=0; i<DBSIZE; ++i ){
-        fprintf(f_out,"%s,%s,%s,%s\n",database->subject[i].attribute_0,
-                                      database->subject[i].attribute_1, 
-                                      database->subject[i].attribute_2, 
-                                      database->subject[i].attribute_3); 
-    }
     for ( i=0; i<addr[3]->size; ++i ){
         eraseTree(T[i].root, T+i);
     }

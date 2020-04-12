@@ -5,6 +5,7 @@
 #include <locale.h>
 #include <string.h>
 #include <time.h>
+#include <assert.h>
 
 //Initialize BLOCK in a HEAP, and assign it's address to an index in the HEAP,
 //the maximum amount of BLOCKS that can be created is defined in TOTAL_BLOCKS
@@ -12,13 +13,14 @@ void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP, int digits)
 {
     static size_t i = 0;
 
-    if (HEAP->size >= TOTAL_BLOCKS) {
+    if (i >= TOTAL_BLOCKS) {
         fprintf(stderr, "Reached maximum capacity (%d) for memory creation\n", TOTAL_BLOCKS);
         exit(1);
     }
     BLOCK->size = 0;
     BLOCK->heap_id = i;
     BLOCK->digits = digits;
+    BLOCK->data = malloc(1);
     
     HEAP->size = i;
     HEAP->addr[i++] = BLOCK;

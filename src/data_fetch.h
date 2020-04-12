@@ -33,10 +33,6 @@ typedef struct subject {
     // create or remove attributes as needed
 } t_subj;
 
-typedef struct DB {
-    t_subj subject[DBSIZE];
-} t_DB;
-
 void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP, int digits);
 
 void freeBLOCK(t_BLOCK *BLOCK, size_t first_i);

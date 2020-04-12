@@ -20,3 +20,4 @@ IMPORTANT NOTES#-
 TO BE IMPLEMENTED#-
         
         -sorting function for binary tree
+        -iterative method to free each tree node
