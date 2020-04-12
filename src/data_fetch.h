@@ -2,7 +2,7 @@
 
 //limit seems to be at 90~100k range
 //depends on how much you end up alloc'ing
-#define DBSIZE 1000
+#define DBSIZE 90000
 #define LENGTH_0 12
 #define LENGTH_1 6
 #define LENGTH_2 6

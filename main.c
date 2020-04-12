@@ -6,12 +6,11 @@
 #include <locale.h>
 #include <string.h>
 #include <time.h>
+#include <assert.h>
 
 #define IDSIZE 999999999
 #define AGENCYSIZE 99999 
 #define ACCOUNTSIZE 99999
-
-/* PAROU TENTANDO DESCOBRIR COMO FAZER PRA IMPRIMIR AGENCIA E CONTA LINKADOS*/
 
 void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database);
 
@@ -74,20 +73,21 @@ int main(void)
 //This function needs to be updated and be made into a new library, not modularized enough, basically compiles every information and print output into file
 void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database)
 {
-    t_assign parent[addr[3]->size];
+    t_tree T[addr[3]->size];    
 
     char *child;
     char *str1, *str2;
     size_t i, rand_i, rand_j;
     
     for ( i=0; i < addr[3]->size; ++i ){
-        parent[i].start = NULL;
-        parent[i].end = NULL;
-        initAssign(&parent[i], addr[3]->data[i]);
+        initTree(T+i, addr[3]->data[i]);
     }
     
     shuffleArray(addr[2]);    
     for ( i=0; i<DBSIZE; ++i ){
+        // THIS CREATES ATTRIBUTE 1
+        fetchLinear(database->subject[i].attribute_0, addr[2], i);
+        // THIS CREATES ATTRIBUTE 3
         str1 = pickRandom(addr[0]);
         str2 = pickRandom(addr[1]);
         joinStrings(database->subject[i].attribute_3,str1,str2);
@@ -95,39 +95,27 @@ void getUsers(FILE* f_out, t_BLOCK *addr[], t_DB *database)
             str2 = pickRandom(addr[1]);
             joinStrings(database->subject[i].attribute_3,database->subject[i].attribute_3,str2);
         }
-        fetchLinear(database->subject[i].attribute_0, addr[2], i);
 
-        rand_i = rand() % addr[3]->size;
-        rand_j = rand() % addr[4]->size;
-        // UGLY WHILE() INCOMING
-        while ((rand_j < addr[4]->size) && !(child = uniqueChild(parent+rand_i, addr[4]->data[rand_j++])) );
-        // SORRY
-        database->subject[i].attribute_2 = child;
-        assignChild(parent+rand_i,child);
-        database->subject[i].attribute_1 = parent[rand_i].data;
+        //THIS CREATES ATTRIBUTE 1 AND 2 (1 is a requisite for 2)
+        rand_i = rand()%addr[3]->size;
+        rand_j = rand()%addr[4]->size;
+        while ((rand_j < addr[4]->size) && !(child = uniqueChild(T+rand_i, addr[4]->data[rand_j])) ){
+            //fprintf(stdout,"%s not unique to %s!\n", addr[4]->data[rand_j], addr[3]->data[rand_i]);
+            ++rand_j;
+        } insertChild(T+rand_i, child);
+
+        database->subject[i].attribute_1 = addr[3]->data[rand_i];
+        database->subject[i].attribute_2 = child; 
     }
-   
+
     // PRINTS DATABASE TO OUTPUT STREAM 
     for ( i=0; i<DBSIZE; ++i ){
         fprintf(f_out,"%s,%s,%s,%s\n",database->subject[i].attribute_0,
-                                      database->subject[i].attribute_1,
-                                      database->subject[i].attribute_2,
+                                      database->subject[i].attribute_1, 
+                                      database->subject[i].attribute_2, 
                                       database->subject[i].attribute_3); 
     }
-    /* PRINTS PARENTS AND ITS CHILDREN FOR DEBUGGING
-    t_node *aux;
     for ( i=0; i<addr[3]->size; ++i ){
-        fprintf(stderr, "%ld: %s: %i\n", i, parent[i].data, parent[i].size);
-        aux = parent[i].start->next;
-        while ( aux != parent[i].end ){
-            fprintf(stderr, "\t%s\n", aux->data);
-            aux = aux->next;
-        }
+        eraseTree(T[i].root, T+i);
     }
-    */
-
-    //ERASES EVERY FAMILY
-    for ( i=0; i<addr[3]->size; ++i )
-        eraseFamily(parent+i);
 }
-

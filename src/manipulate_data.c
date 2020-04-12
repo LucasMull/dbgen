@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 //randomly pick data index and returns its address
 char *pickRandom(t_BLOCK *BLOCK){
@@ -65,115 +66,81 @@ void shuffleArray(t_BLOCK *BLOCK)
         stringSwap(BLOCK->data+i, BLOCK->data+rand()%BLOCK->size);
 }
 
-//Initialize parent data, to be assigned children to
-void initAssign(t_assign *parent, char *str)
+//Initialize empty tree from tag
+void initTree(t_tree *T, char *tag)
 {
-    t_node *start, *end;
+    assert(tag);
 
-    if ( parent->start || parent->end ){
-        fprintf(stderr, "t_assign can't be initialized, aborting\n");
-        exit(1);
-    }
-
-    start = (t_node*)malloc(sizeof(t_node));
-    end = (t_node*)malloc(sizeof(t_node));
-
-    if ( !start || !end ){
-        fprintf(stderr, "Couldn't malloc, aborting\n");
-        exit(1);
-    }
-    parent->start = start;
-    start->next = end;
-    start->prev = NULL;
-    parent->end = end;
-    end->prev = start;
-    end->next = NULL;
-
-    parent->start->data = NULL;
-    parent->end->data = NULL;
-    parent->data = str;
-    parent->size = 0;
+    T->size = 0;
+    T->data = tag;
+    T->root = NULL;
 }
-//check potential children for it's uniqueness among already
-//assigned parent's children. If unique, return children's data
-//address, otherwise return NULL.
+//check potential child for it's uniqueness among already
+//assigned children. If unique, return child's data address
+//otherwise return NULL.
 
 //I should implement a limiter on how many functions calls can be
 //made before it gives up
-char *uniqueChild(t_assign *parent, char *children)
-{
-    t_node *aux;   
-    unsigned comp_start=0;
-    unsigned comp_end=1;
-    
-    if ( parent->start->next != parent->end ){ 
-        comp_start = (unsigned)strcmp(children,parent->start->next->data);
-        comp_end = (unsigned)strcmp(children,parent->end->prev->data);
-    }
-
-    if ( !parent->start || !parent->end ){
-        fprintf(stderr, "Uninitialized t_assign variable, aborting\n");
-        exit(1);
-    }
-
-    if ( comp_start < comp_end ){
-        aux = parent->end->prev;
-        while ( aux != parent->start ){
-            if (!strcmp(children, aux->data)) return NULL;
-            aux = aux->prev;
-        }
-    } else {
-        aux = parent->start->next;
-        while ( aux != parent->end ){
-            if (!strcmp(children, aux->data)) return NULL;
-            aux = aux->next;
-        }
-
-    }
-    return children;
-}
-
-//assign children data to parent data, and stores it in linked list in crescent
-//order, for easy access
-void assignChild(t_assign *parent, char *children)
-{
-    t_node *node, *aux;
-
-    if ( !children ){
-        fprintf(stderr,"NULL children,aborting\n");
-        exit(1);
-    }
-    node = (t_node*)malloc(sizeof(t_node));
-    if ( !node ){
-       fprintf(stderr,"Couldn't malloc, aborting\n");
-        exit(1);
-    }
-   
-    aux = parent->start->next; 
-    while ((aux!=parent->end) && (strcmp(children, aux->data)>0))
-        aux = aux->next;
-
-    node->next = aux;
-    node->prev = aux->prev;
-    aux->prev->next = node;
-    aux->prev = node;
-
-    node->data = children;
-    ++parent->size;
-}
-
-//erases family so that the parent variable can be reused
-void eraseFamily(t_assign *parent)
+char *uniqueChild(t_tree *T, char *child)
 {
     t_node *aux;
+    int cmp;
+    aux = T->root;
 
-    aux = parent->start->next;    
     while (aux != NULL){
-        free(aux->prev);
-        aux = aux->next;
+        cmp = strcmp(child, aux->data);
+        if ( cmp == 0 ){
+            return NULL;
+        } else if ( cmp > 0 ){
+            aux = aux->r;
+        } else aux = aux->l;
     }
-    free(parent->end);
+    return child;
+}
 
-    parent->size = 0;
-    parent->data = NULL;
+//insert child into tree respecting the binary tree format
+void insertChild(t_tree *T, char *child){
+    t_node *new_node, *aux1, *aux2;
+    int cmp; //where strcmp() return value will be stored;
+    
+    assert(child);
+
+    new_node = (t_node*)malloc(sizeof(t_node));
+    assert(new_node);
+
+    new_node->data = child;
+    aux1 = T->root;
+    aux2 = NULL;
+    while( aux1 != NULL ){
+        aux2=aux1;
+        cmp = strcmp(new_node->data, aux1->data);
+        if ( cmp < 0 ){
+            aux1 = aux1->l;
+        } else aux1 = aux1->r;
+    }
+
+    new_node->p = aux2;
+    if ( aux2 == NULL ){
+        T->root = new_node;
+    } else if (strcmp(new_node->data, aux2->data) < 0){
+        aux2->l = new_node;
+    } else aux2->r = new_node;
+    ++T->size;
+}
+
+void printTree(t_node *node){
+    if ( node ) {
+        printTree(node->l);
+        printTree(node->r);
+        fprintf(stdout,"%s ",node->data);
+    }
+}
+
+void eraseTree(t_node *node, t_tree *T){
+    if ( node ) {
+        eraseTree(node->l, T);
+        eraseTree(node->r, T);
+        free(node);
+        --T->size;
+    }
 }

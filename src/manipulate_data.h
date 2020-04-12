@@ -1,10 +1,11 @@
 #include <stdio.h>
 
 typedef struct node {
-        struct node *next;
-        struct node *prev;
+        struct node *l;
+        struct node *r;
+        struct node *p;
 
-        char *data;
+        char *data; //should be *void
 } t_node;
 
 typedef struct assign {
@@ -14,6 +15,12 @@ typedef struct assign {
         char *data;
         int size;
 } t_assign;
+
+typedef struct tree {
+        t_node *root;
+        char *data; //should be void*
+        size_t size;
+} t_tree;
 
 char *pickRandom(t_BLOCK *BLOCK);
 
@@ -29,14 +36,16 @@ void stringSwap(char **str1_ptr, char **str2_ptr);
 
 void shuffleArray(t_BLOCK *BLOCK);
 /*
-These grouped functions make use of linked list to assign
-n amount of children data to a parent data, uniqueChild()
+These grouped functions make use of binary tree to assign
+children data in a orderly fashion, *uniqueChild()
 can be used to verify any occurence of a given children
-under the parent data, returning NULL if there is an
-occurence, and the children address if there is not,
-should probably be turned into a new library.
+inside the tree, returning NULL if there is an
+occurence, and the child address if there isn't.
+
+Should probably turn this into its own library.
 */
-void initAssign(t_assign *parent, char *str);
-char *uniqueChild(t_assign *parent, char *children);
-void assignChild(t_assign *parent, char *children);
-void eraseFamily(t_assign *parent);
+void initTree(t_tree *T, char *tag);
+char *uniqueChild(t_tree *T, char *child);
+void insertChild(t_tree *T, char *child);
+void printTree(t_node *node);
+void eraseTree(t_node *node, t_tree *T);

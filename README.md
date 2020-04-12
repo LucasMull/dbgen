@@ -16,3 +16,7 @@ IMPORTANT NOTES#-
 
         -content/ contains pre-created data to be manipulated via code, there is a name.txt and surname.txt in there by
          default, which are used to generate fake names in main.c
+
+TO BE IMPLEMENTED#-
+        
+        -sorting function for binary tree
