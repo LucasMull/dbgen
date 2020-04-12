@@ -49,18 +49,18 @@ int main(void)
         fprintf(stderr,"Couldn't open nomes.txt");
     if ( !f_surnam )
         fprintf(stderr,"Couldn't open sobrenomes.txt");
-
   
     fileToBLOCK(f_name, HEAP.addr[0]);
+    fclose(f_name);    
     fileToBLOCK(f_surnam, HEAP.addr[1]);    
+    fclose(f_surnam);
+
     NumsToBLOCK(HEAP.addr[2], 700000000, IDSIZE, DBSIZE);
     NumsToBLOCK(HEAP.addr[3], 10000, AGENCYSIZE, 5);
     NumsToBLOCK(HEAP.addr[4], 10000, ACCOUNTSIZE, DBSIZE);
     
-    fclose(f_name);    
-    fclose(f_surnam);
 
-    f_out = fopen("data.csv", "a");
+    f_out = fopen("data.csv", "w");
     getUsers(f_out, HEAP.addr); //the brain
     fclose(f_out);
 
@@ -84,10 +84,10 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
         initTree(T+i, addr[3]->data[i]);
     }
     
-    shuffleArray(addr[2]);    
+    shuffleArray(addr[2]);
     for ( i=0; i<DBSIZE; ++i ){
         // THIS CREATES ATTRIBUTE 1
-        fetchLinear(subject.attribute_0, addr[2], i);
+        subject.attribute_0 = fetchLinear(addr[2], i);
         // THIS CREATES ATTRIBUTE 3
         str1 = pickRandom(addr[0]);
         str2 = pickRandom(addr[1]);
@@ -112,8 +112,10 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
         fprintf(f_out,"%s,%s,%s,%s\n",subject.attribute_0,
                                       subject.attribute_1, 
                                       subject.attribute_2, 
-                                      subject.attribute_3); 
+                                      subject.attribute_3);
     }
+    free(subject.attribute_1);
+    free(subject.attribute_2);
 
     for ( i=0; i<addr[3]->size; ++i ){
         eraseTree(T[i].root, T+i);

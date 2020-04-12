@@ -26,7 +26,7 @@ typedef struct HEAP {
 } t_HEAP;
 
 typedef struct subject {
-    char attribute_0[LENGTH_0];
+    char *attribute_0;
     char *attribute_1;
     char *attribute_2;
     char attribute_3[LENGTH_3];

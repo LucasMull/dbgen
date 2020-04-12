@@ -35,13 +35,14 @@ void joinRandom(char joint[], const t_BLOCK *BLOCK1, const t_BLOCK *BLOCK2){
 }
 
 //fetch for DATA linearly under the condition that its elements count is greater than or equal to DBSIZE
-void fetchLinear(char dest[], t_BLOCK *BLOCK, size_t i)
+char *fetchLinear(t_BLOCK *BLOCK, size_t i)
 {
     if ( BLOCK->size < DBSIZE ){
         fprintf(stderr,"Couldn't fetch linearly, BLOCK elements is lesser than DBSIZE");
         exit(1);
     }
-    snprintf(dest,BLOCK->digits-1,"%s",BLOCK->data[i]);
+    //snprintf(dest,BLOCK->digits-1,"%s",BLOCK->data[i]);
+    return BLOCK->data[i];
 }
 
 //fetch for DATA with random index access
@@ -100,17 +101,18 @@ char *uniqueChild(t_tree *T, char *child)
 
 //insert child into tree respecting the binary tree format
 void insertChild(t_tree *T, char *child){
-    t_node *new_node, *aux1, *aux2;
+    t_node *new_node;
+    t_node *aux1, *aux2 = NULL;
     int cmp; //where strcmp() return value will be stored;
-    
-    assert(child);
 
     new_node = (t_node*)malloc(sizeof(t_node));
-    assert(new_node);
+    if (badAlloc(new_node)) exit(1);
 
     new_node->data = child;
+    new_node->p = NULL;
+    new_node->l = NULL;
+    new_node->r = NULL;
     aux1 = T->root;
-    aux2 = NULL;
     while( aux1 != NULL ){
         aux2=aux1;
         cmp = strcmp(new_node->data, aux1->data);

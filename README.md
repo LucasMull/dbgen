@@ -17,7 +17,9 @@ IMPORTANT NOTES#-
         -content/ contains pre-created data to be manipulated via code, there is a name.txt and surname.txt in there by
          default, which are used to generate fake names in main.c
 
-TO BE IMPLEMENTED#-
+TO BE IMPLEMENTED/FIXED#-
         
         -sorting function for binary tree
         -iterative method to free each tree node
+        -insertChild() will sometimes lead to a segmentation fault,
+         because of string unalignment in strcmp (aux2->data fault).
