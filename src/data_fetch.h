@@ -55,9 +55,9 @@ void freeBLOCK(t_BLOCK *BLOCK, size_t first_i);
 
 void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK);
 
-void numsToHEAP(t_BLOCK *BLOCK, int start, int scope, size_t amount, size_t digits);
+void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digits);
 
-void numsToSTACK(char STACK[][STRLEN], int start, int scope, size_t amount, size_t digits);
+void numsToSTACK(char STACK[][STRLEN], int first, int last, size_t amount, size_t digits);
 
 void stringSwap(char **str1_ptr, char **str2_ptr);
 

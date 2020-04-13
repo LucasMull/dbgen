@@ -22,3 +22,4 @@ TO BE IMPLEMENTED/FIXED#-
         -sorting function for binary tree
         -iterative method to free each tree node (maybe)
         -organize static arrays by address, by addressing each array to a struct t_STACK with address slot, such as t_STACK STACK[0]= s_agency
+        -change to a datatype other than int that allows for more decimal digits

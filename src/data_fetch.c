@@ -74,9 +74,8 @@ pad = 200 , means it will decrement from 2000 to 1000,
 rand() used in each padding, from a range of last to last+pad makes sure each random number 
     is unique, but also lower than the previous one
 */
-void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digits)
-{
-    int pad;
+void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digits){
+    unsigned int pad;
     
     if ( last < first ) {
         fprintf(stderr, "Last index is lesser than first\n");
@@ -108,7 +107,7 @@ void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digit
 
 void numsToSTACK(char STACK[][STRLEN], int first, int last, size_t amount, size_t digits)
 {
-    int pad;
+    unsigned int pad;
     
     if ( last < first ) {
         fprintf(stderr, "Last index is lesser than first\n");
