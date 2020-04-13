@@ -8,6 +8,17 @@
 #include <time.h>
 #include <assert.h>
 
+typedef struct subject {
+    char *attribute_0;
+    char *attribute_1[3]; //for surname, maximum of 3
+    char *attribute_2;
+    char *attribute_3;
+    char *attribute_4;
+    //int attribute_5;
+    //void *attribute_6;
+    // create or remove attributes as needed
+} t_subj;
+
 void getUsers(FILE* f_out, t_BLOCK *addr[],
               char s_agency[][STRLEN], char s_account[][STRLEN]);
 

@@ -49,15 +49,6 @@ typedef struct HEAP {
     size_t size;
 } t_HEAP;
 
-typedef struct subject {
-    char *attribute_0;
-    char *attribute_1[3]; //for surname, maximum of 3
-    char *attribute_2;
-    char *attribute_3;
-    char *attribute_4;
-    // create or remove attributes as needed
-} t_subj;
-
 void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP);
 
 void freeBLOCK(t_BLOCK *BLOCK, size_t first_i);
