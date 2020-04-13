@@ -12,7 +12,7 @@ MAIN = $(OBJDIR)/main.o
 #remove comment to activate debug
 #$(info objs: $(OBJS))
 
-.PHONY : clean all
+.PHONY : clean all debug
 
 all: run
 
@@ -29,6 +29,7 @@ $(MAIN): main.c
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	gcc -c $< -o $@
 
-
+debug : build
+	gcc -g $(OBJS) -o debug.out
 clean :
-	-rm -r run data.csv $(OBJDIR)
+	-rm -rf run data.csv $(OBJDIR) debug.out

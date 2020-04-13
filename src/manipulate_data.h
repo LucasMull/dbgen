@@ -24,13 +24,7 @@ typedef struct tree {
 
 char *pickRandom(t_BLOCK *BLOCK);
 
-void joinStrings(char joint[], char str1[], char str2[]);
-
-void joinRandom(char joint[], const t_BLOCK *BLOCK1, const t_BLOCK *BLOCK2);
-
 char *fetchLinear(t_BLOCK *BLOCK, size_t i);
-
-void fetchRandom(char dest[], t_BLOCK *BLOCK);
 
 void stringSwap(char **str1_ptr, char **str2_ptr);
 

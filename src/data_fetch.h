@@ -1,22 +1,46 @@
 #include <stdio.h>
 
-//limit seems to be at 90~100k range
+//DBSIZE limit seems to be at 90~100k range
 //depends on how much you end up alloc'ing
-#define DBSIZE 100000
-#define LENGTH_0 12
-#define LENGTH_1 6
-#define LENGTH_2 6
-#define LENGTH_3 50
+#define DBSIZE 330000
+#define TOTAL_BLOCKS 5 //max possible blocks in heap
 
-#define TOTAL_BLOCKS 5
-#define STRLENGTH 25
+#define NAME 0 // << change define name to whatever you want to represent there
+#define LENGTH_0 25
+#define MIN_0
+#define MAX_0
+#define AMT_0
+
+#define SURNAME 1
+#define LENGTH_1 25
+#define MIN_1
+#define MAX_1
+#define AMT_1
+
+#define ID 2
+#define LENGTH_2 12
+#define MIN_2 700000000
+#define MAX_2 999999999
+#define AMT_2 DBSIZE
+
+#define AGENCY 3
+#define LENGTH_3 7
+#define MIN_3 10000
+#define MAX_3 99999
+#define AMT_3 5
+
+#define ACCOUNT 4
+#define LENGTH_4 7
+#define MIN_4 10000
+#define MAX_4 99999
+#define AMT_4 89999
+
+#define STRLEN 25
 #define UNDEFINED 0
 
 
 typedef struct BLOCK {
-    size_t heap_id;
     size_t size;
-    size_t digits;
     char **data;
 } t_BLOCK;
 
@@ -27,19 +51,22 @@ typedef struct HEAP {
 
 typedef struct subject {
     char *attribute_0;
-    char *attribute_1;
+    char *attribute_1[3]; //for surname, maximum of 3
     char *attribute_2;
-    char attribute_3[LENGTH_3];
+    char *attribute_3;
+    char *attribute_4;
     // create or remove attributes as needed
 } t_subj;
 
-void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP, int digits);
+void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP);
 
 void freeBLOCK(t_BLOCK *BLOCK, size_t first_i);
 
 void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK);
 
-void NumsToBLOCK(t_BLOCK *BLOCK, int start, int scope, size_t amount);
+void numsToHEAP(t_BLOCK *BLOCK, int start, int scope, size_t amount, size_t digits);
+
+void numsToSTACK(char STACK[][STRLEN], int start, int scope, size_t amount, size_t digits);
 
 void stringSwap(char **str1_ptr, char **str2_ptr);
 

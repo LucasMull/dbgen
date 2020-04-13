@@ -9,7 +9,7 @@
 
 //Initialize BLOCK in a HEAP, and assign it's address to an index in the HEAP,
 //the maximum amount of BLOCKS that can be created is defined in TOTAL_BLOCKS
-void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP, int digits)
+void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP)
 {
     static size_t i = 0;
 
@@ -18,8 +18,6 @@ void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP, int digits)
         exit(1);
     }
     BLOCK->size = 0;
-    BLOCK->heap_id = i;
-    BLOCK->digits = digits;
     BLOCK->data = malloc(1);
     
     HEAP->size = i;
@@ -55,10 +53,10 @@ void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK)
         BLOCK->data = (char**)realloc(BLOCK->data, sizeof(char*)*(i+1));
         if (badAlloc(BLOCK->data)) exit(1);
         
-        BLOCK->data[i] = (char*)malloc(sizeof(char)*STRLENGTH);
+        BLOCK->data[i] = (char*)malloc(sizeof(char)*STRLEN);
         if (badAlloc(BLOCK->data)) exit(1);
         
-        fgets(BLOCK->data[i], STRLENGTH-1, f_read);
+        fgets(BLOCK->data[i], STRLEN-1, f_read);
         BLOCK->data[i][strlen(BLOCK->data[i])-1] = '\0';
         ++i;
     }
@@ -76,7 +74,7 @@ pad = 200 , means it will decrement from 2000 to 1000,
 rand() used in each padding, from a range of last to last+pad makes sure each random number 
     is unique, but also lower than the previous one
 */
-void NumsToBLOCK(t_BLOCK *BLOCK, int first, int last, size_t amount)
+void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digits)
 {
     int pad;
     
@@ -100,10 +98,34 @@ void NumsToBLOCK(t_BLOCK *BLOCK, int first, int last, size_t amount)
 
     last -= pad;
     while ( amount-- > 0 ) {
-        BLOCK->data[amount] = (char*)malloc(sizeof(char)*BLOCK->digits);
+        BLOCK->data[amount] = (char*)malloc(sizeof(char)*digits);
         if (badAlloc(BLOCK->data)) exit(1);
 
-        snprintf(BLOCK->data[amount],BLOCK->digits-1,"%d",last+rand()%pad);
+        snprintf(BLOCK->data[amount],digits-1,"%d",last+rand()%pad);
+        last -= pad;
+    }
+}
+
+void numsToSTACK(char STACK[][STRLEN], int first, int last, size_t amount, size_t digits)
+{
+    int pad;
+    
+    if ( last < first ) {
+        fprintf(stderr, "Last index is lesser than first\n");
+        exit(1);
+    } else if ( amount > (last-first) ) {
+        amount = (last-first);
+        pad = 1;
+    } else if ( amount > 0 ) {
+        pad = (last-first)/amount;
+    } else {
+        fprintf(stderr, "Invalid elements amount (>=0)\n");
+        exit(1);
+    }
+
+    last -= pad;
+    while ( amount-- > 0 ) {
+        snprintf(STACK[amount],digits-1,"%d",last+rand()%pad);
         last -= pad;
     }
 }

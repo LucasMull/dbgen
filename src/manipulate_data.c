@@ -11,29 +11,6 @@ char *pickRandom(t_BLOCK *BLOCK){
     return BLOCK->data[rand()%BLOCK->size];
 }
 
-//concatenate two selected strings into a single one
-
-//a better option for this function would be if instead
-//of concatenating two strings into a new one, simply have
-//joint point to address of str1 and str2, like char *joint[2]
-void joinStrings(char joint[], char str1[], char str2[]){
-    if (str1 == joint) {
-        strncat(joint, " ", STRLENGTH);
-        strncat(joint, str2, STRLENGTH);
-    } else if (str2 == joint) {
-        strncat(joint, " ", STRLENGTH);
-        strncat(joint, str1, STRLENGTH);
-    } else {
-        snprintf(joint,STRLENGTH-1,"%s %s",str1,str2);
-    }
-}
-
-//randomly pick string elements and concatenate into a single one (don't override existing ones)
-void joinRandom(char joint[], const t_BLOCK *BLOCK1, const t_BLOCK *BLOCK2){
-    snprintf(joint,STRLENGTH-1,"%s %s",BLOCK1->data[rand()%BLOCK1->size],
-                                       BLOCK2->data[rand()%BLOCK2->size]);
-}
-
 //fetch for DATA linearly under the condition that its elements count is greater than or equal to DBSIZE
 char *fetchLinear(t_BLOCK *BLOCK, size_t i)
 {
@@ -41,13 +18,7 @@ char *fetchLinear(t_BLOCK *BLOCK, size_t i)
         fprintf(stderr,"Couldn't fetch linearly, BLOCK elements is lesser than DBSIZE");
         exit(1);
     }
-    //snprintf(dest,BLOCK->digits-1,"%s",BLOCK->data[i]);
     return BLOCK->data[i];
-}
-
-//fetch for DATA with random index access
-void fetchRandom(char dest[], t_BLOCK *BLOCK){
-    snprintf(dest,BLOCK->digits-1,"%s",BLOCK->data[rand()%BLOCK->size]);
 }
 
 //Pretty straightforward, swaps two string pointers
