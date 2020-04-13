@@ -21,5 +21,5 @@ TO BE IMPLEMENTED/FIXED#-
         
         -sorting function for binary tree
         -iterative method to free each tree node
-        -insertChild() will sometimes lead to a segmentation fault,
-         because of string unalignment in strcmp (aux2->data fault).
+        -switch from dynamic to static array where
+         possible

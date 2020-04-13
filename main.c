@@ -99,12 +99,15 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
 
         //THIS CREATES ATTRIBUTE 1 AND 2 (1 is a requisite for 2)
         rand_i = rand()%addr[3]->size;
-        rand_j = rand()%addr[4]->size;
-        while ((rand_j < addr[4]->size) && !(child = uniqueChild(T+rand_i, addr[4]->data[rand_j])) ){
-            //fprintf(stdout,"%s not unique to %s!\n", addr[4]->data[rand_j], addr[3]->data[rand_i]);
-            ++rand_j;
-        } insertChild(T+rand_i, child);
-
+        do{
+            rand_j = rand()%addr[4]->size;
+            while ( rand_j < addr[4]->size ){
+                if ( child = uniqueChild(T+rand_i,addr[4]->data[rand_j]) )
+                    break;
+                ++rand_j;
+            }
+        } while (!child);
+        insertChild(T+rand_i, child);
         subject.attribute_1 = addr[3]->data[rand_i];
         subject.attribute_2 = child;
          
