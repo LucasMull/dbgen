@@ -19,8 +19,7 @@ typedef struct subject {
     // create or remove attributes as needed
 } t_subj;
 
-void getUsers(FILE* f_out, t_BLOCK *addr[],
-              char s_agency[][STRLEN], char s_account[][STRLEN]);
+void getUsers(FILE* f_out, t_BLOCK *addr[]);
 
 int main(void)
 {
@@ -36,8 +35,6 @@ int main(void)
 
     t_HEAP HEAP;
     t_BLOCK b_name, b_surnam, b_ID;
-
-    char s_ID[AMT_2][STRLEN], s_agency[AMT_3][STRLEN], s_account[AMT_4][STRLEN];
 
     if ( !locale ){
         fprintf(stderr,"Couldn't set locale");
@@ -63,11 +60,9 @@ int main(void)
     fclose(f_surnam);
 
     numsToHEAP(&b_ID, MIN_2, MAX_2, AMT_2, LENGTH_2);
-    numsToSTACK(s_agency, MIN_3, MAX_3, AMT_3, LENGTH_3);
-    numsToSTACK(s_account, MIN_4, MAX_4, AMT_4, LENGTH_4);
 
     f_out = fopen("data.csv", "w");
-    getUsers(f_out, HEAP.addr, s_agency, s_account); //the brain
+    getUsers(f_out, HEAP.addr); //the brain
     fclose(f_out);
 
     for ( i=0; i<=HEAP.size; ++i )
@@ -77,18 +72,19 @@ int main(void)
 }
 
 //This function needs to be updated and be made into a new library, not modularized enough, basically compiles every information and print output into file
-void getUsers(FILE* f_out, t_BLOCK *addr[], 
-              char s_agency[][STRLEN], char s_account[][STRLEN])
+void getUsers(FILE* f_out, t_BLOCK *addr[])
 {
     t_tree T[AMT_3];    
     t_subj subject;
+    char s_agency[AMT_3][LENGTH_3], s_account[AMT_4][LENGTH_4];
+    numsToSTACK(MIN_3, MAX_3, AMT_3, LENGTH_3, s_agency);
+    numsToSTACK(MIN_4, MAX_4, AMT_4, LENGTH_4, s_account);
 
-    char *temp_str;
     char NIL = '\0';
     char *child;
     size_t i, rand_i, rand_j;
     
-    for ( i=0; i<AMT_3; ++i ){
+    for ( i=0; i<AMT_3; ++i ){ //initialize tree for dependent data
         initTree(T+i, s_agency[i]);
     }
     
@@ -126,9 +122,11 @@ void getUsers(FILE* f_out, t_BLOCK *addr[],
                                             subject.attribute_0,
                                             subject.attribute_1[0],
                                             subject.attribute_1[1]);
+        free(subject.attribute_2);
     }
+    addr[ID]->size -= i;
 
-    for ( i=0; i<AMT_3; ++i ){
+    for ( i=0; i<AMT_3; ++i ){ //free every tree node
         eraseTree(T[i].root, T+i);
     }
 }

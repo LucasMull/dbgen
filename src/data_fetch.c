@@ -98,14 +98,14 @@ void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digit
     last -= pad;
     while ( amount-- > 0 ) {
         BLOCK->data[amount] = (char*)malloc(sizeof(char)*digits);
-        if (badAlloc(BLOCK->data)) exit(1);
+        if (badAlloc(BLOCK->data[amount])) exit(1);
 
         snprintf(BLOCK->data[amount],digits-1,"%d",last+rand()%pad);
         last -= pad;
     }
 }
 
-void numsToSTACK(char STACK[][STRLEN], int first, int last, size_t amount, size_t digits)
+void numsToSTACK(int first, int last, size_t amount, size_t digits, char STACK[][digits])
 {
     unsigned int pad;
     

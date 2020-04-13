@@ -18,7 +18,7 @@
 #define AMT_1
 
 #define ID 2
-#define LENGTH_2 12
+#define LENGTH_2 11
 #define MIN_2 700000000
 #define MAX_2 999999999
 #define AMT_2 DBSIZE
@@ -57,7 +57,7 @@ void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK);
 
 void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digits);
 
-void numsToSTACK(char STACK[][STRLEN], int first, int last, size_t amount, size_t digits);
+void numsToSTACK(int first, int last, size_t amount, size_t digits, char STACK[][digits]);
 
 void stringSwap(char **str1_ptr, char **str2_ptr);
 
