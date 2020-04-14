@@ -14,11 +14,11 @@ void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP)
     static size_t i = 0;
 
     if (i >= TOTAL_BLOCKS) {
-        fprintf(stderr, "Reached maximum capacity (%d) for memory creation\n", TOTAL_BLOCKS);
+        fprintf(stderr, "Reached maximum capacity (%d) for BLOCK's creation\n", TOTAL_BLOCKS);
         exit(1);
     }
     BLOCK->size = 0;
-    BLOCK->data = malloc(1);
+    BLOCK->data = NULL;
     
     HEAP->size = i;
     HEAP->addr[i++] = BLOCK;
@@ -30,15 +30,13 @@ void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
 {
     size_t i, temp;
 
-    if (badAlloc(BLOCK->data)) exit(1);
-
-    temp = BLOCK->size; 
+    temp = BLOCK->size;
     for ( i=first_i; i < BLOCK->size; ++i ){
         free(BLOCK->data[i]);
         --temp;
     }
     BLOCK->size = temp;
-
+    
     if ( BLOCK->size == 0 )
         free(BLOCK->data);
 }
@@ -47,17 +45,14 @@ void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
 void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK)
 {
     size_t i;
+    char temp[STRLEN];
 
     i = 0;
-    while( !feof(f_read) ){
-        BLOCK->data = (char**)realloc(BLOCK->data, sizeof(char*)*(i+1));
+    while( fgets(temp, STRLEN-1, f_read) ){
+        BLOCK->data =(char**)realloc(BLOCK->data, sizeof(char*)*(i+1));
         if (badAlloc(BLOCK->data)) exit(1);
-        
-        BLOCK->data[i] = (char*)malloc(sizeof(char)*STRLEN);
-        if (badAlloc(BLOCK->data)) exit(1);
-        
-        fgets(BLOCK->data[i], STRLEN-1, f_read);
-        BLOCK->data[i][strlen(BLOCK->data[i])-1] = '\0';
+        BLOCK->data[i] = strndup(temp,strlen(temp)-1);
+        if (badAlloc(BLOCK->data[i])) exit(1);
         ++i;
     }
     BLOCK->size = i;
