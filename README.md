@@ -18,7 +18,7 @@ content file contains pre-existing data to be manipulated in the heap, there is 
 
 main.c is just an example code to go by, all the important library functions are located in at .h files in src/
          
-main.c will generate a bank user's database with 2million individuals. Each row is a user, and each column is a data pertaining to its user. The first column indicates its unique ID, the second to the user's agency, the third is a unique account to its corresponding agency, and the fourth is its name. 
+main.c will generate a bank user's database with 2million individuals. Each row is a user, and each column is a data pertaining to its user. The first column indicates its unique ID, the second to the user's agency, the third is a unique account bound to its corresponding agency, and the fourth is its name. 
 Because the third column (account) is dependant on the second (agency), it will check for any occurrence of its current value in the agency's tree,and will bind it's value to it if there is none. The code's speed is directly affected by the amount of individuals to be generated (as in DBSIZE) and the amount of agencies available (as in AMT_3). More agencies means fewer accounts being verified for uniqueness, and, the number of individuals increases, so must the number of agencies as to increase the likeability of unique accounts.
 
 ## TO BE FIXED/IMPLEMENTED
