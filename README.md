@@ -18,8 +18,8 @@ IMPORTANT NOTES-
 
         -main.c is just an example code to go by, all the important library functions are located in at *.h files in src/
          
-        -main.c example code generates a bank's user database. Each row corresponds to an user, the first column indicates his unique ID, the second is the user's agency and the third is a unique account to his corresponding agency, and of course, the fourth one is his/her name. Because the third column is dependant on the second, it will check for any occurrence of the account in the agency before assigning it to a user. The code's speed is directly affected by the amount of individuals to be generated (as in DBSIZE) and the amount of agencies available (as in AMT_3). The more agencies means lesser accounts being verified for uniqueness, and, as you increase the number of individuals to be generated it becomes neccessary to increase the amount of agencies for a more disperse amount of unique accounts to be possible.
-
+        -main.c example code generates a bank's user database. Each row corresponds to a user, the first column indicates his unique ID, the second to the user's agency, the third is a unique account to his/her corresponding agency, and the fourth to his/her name. 
+Because the third column (account) is dependant on the second (agency), it will check for any occurrence of its current value in agency's tree, and bind it's value to it if there is none. The code's speed is directly affected by the amount of individuals to be generated (as in DBSIZE) and the amount of agencies available (as in AMT_3). The more agencies means lesser accounts being verified for uniqueness, and, as you increase the number of individuals to be generated it becomes neccessary to increase the amount of agencies for a more disperse amount of unique accounts to be possible.
 
 TO BE IMPLEMENTED/FIXED-
         
