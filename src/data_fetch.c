@@ -81,7 +81,7 @@ void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digit
     } else if ( amount > 0 ) {
         pad = (last-first)/amount;
     } else {
-        fprintf(stderr, "Invalid elements amount (>=0)\n");
+        fprintf(stderr, "Invalid elements amount\n");
         exit(1);
     }
 
@@ -113,7 +113,7 @@ void numsToSTACK(int first, int last, size_t amount, size_t digits, char STACK[]
     } else if ( amount > 0 ) {
         pad = (last-first)/amount;
     } else {
-        fprintf(stderr, "Invalid elements amount (>=0)\n");
+        fprintf(stderr, "Invalid elements amount\n");
         exit(1);
     }
 
