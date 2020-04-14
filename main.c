@@ -6,7 +6,6 @@
 #include <locale.h>
 #include <string.h>
 #include <time.h>
-#include <assert.h>
 
 typedef struct subject {
     char *attribute_0;
@@ -40,7 +39,6 @@ int main(void)
         fprintf(stderr,"Couldn't set locale");
     } else {
         fprintf(stderr,"Locale is set to %s\n",locale);
-        free(locale);
     }
     
     initBLOCK(&b_name, &HEAP); //init and assign b_name to HEAP.addr[0]

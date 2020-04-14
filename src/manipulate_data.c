@@ -15,7 +15,7 @@ char *pickRandom(t_BLOCK *BLOCK){
 char *fetchLinear(t_BLOCK *BLOCK, size_t i)
 {
     if ( BLOCK->size < DBSIZE ){
-        fprintf(stderr,"Couldn't fetch linearly, BLOCK elements is lesser than DBSIZE");
+        fprintf(stderr,"Couldn't fetch linearly, BLOCK element count is lesser than DBSIZE");
         exit(1);
     }
     return BLOCK->data[i];
@@ -102,7 +102,7 @@ void insertChild(t_tree *T, char *child){
 }
 
 void printTree(t_node *node){
-    if ( node ) {
+    if ( node ){
         printTree(node->l);
         printTree(node->r);
         fprintf(stdout,"%s ",node->data);
@@ -110,7 +110,7 @@ void printTree(t_node *node){
 }
 
 void eraseTree(t_node *node, t_tree *T){
-    if ( node ) {
+    if ( node ){
         eraseTree(node->l, T);
         eraseTree(node->r, T);
         free(node);

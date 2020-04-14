@@ -1,8 +1,6 @@
 #include <stdio.h>
 
-//DBSIZE limit seems to be at 90~100k range
-//depends on how much you end up alloc'ing
-#define DBSIZE 330000
+#define DBSIZE 2000000
 #define TOTAL_BLOCKS 5 //max possible blocks in heap
 
 #define NAME 0 // << change define name to whatever you want to represent there
@@ -27,7 +25,7 @@
 #define LENGTH_3 7
 #define MIN_3 10000
 #define MAX_3 99999
-#define AMT_3 5
+#define AMT_3 25 //qtd de agências
 
 #define ACCOUNT 4
 #define LENGTH_4 7

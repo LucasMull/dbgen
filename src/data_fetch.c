@@ -5,7 +5,6 @@
 #include <locale.h>
 #include <string.h>
 #include <time.h>
-#include <assert.h>
 
 //Initialize BLOCK in a HEAP, and assign it's address to an index in the HEAP,
 //the maximum amount of BLOCKS that can be created is defined in TOTAL_BLOCKS
@@ -69,10 +68,11 @@ pad = 200 , means it will decrement from 2000 to 1000,
 rand() used in each padding, from a range of last to last+pad makes sure each random number 
     is unique, but also lower than the previous one
 */
-void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digits){
+void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digits)
+{
     unsigned int pad;
     
-    if ( last < first ) {
+    if ( last < first ){
         fprintf(stderr, "Last index is lesser than first\n");
         exit(1);
     } else if ( amount > (last-first) ) {
@@ -91,7 +91,7 @@ void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digit
     BLOCK->size = amount;
 
     last -= pad;
-    while ( amount-- > 0 ) {
+    while ( amount-- > 0 ){
         BLOCK->data[amount] = (char*)malloc(sizeof(char)*digits);
         if (badAlloc(BLOCK->data[amount])) exit(1);
 
@@ -104,7 +104,7 @@ void numsToSTACK(int first, int last, size_t amount, size_t digits, char STACK[]
 {
     unsigned int pad;
     
-    if ( last < first ) {
+    if ( last < first ){
         fprintf(stderr, "Last index is lesser than first\n");
         exit(1);
     } else if ( amount > (last-first) ) {
@@ -118,7 +118,7 @@ void numsToSTACK(int first, int last, size_t amount, size_t digits, char STACK[]
     }
 
     last -= pad;
-    while ( amount-- > 0 ) {
+    while ( amount-- > 0 ){
         snprintf(STACK[amount],digits-1,"%d",last+rand()%pad);
         last -= pad;
     }
