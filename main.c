@@ -72,16 +72,21 @@ int main(void)
 //This function needs to be updated and be made into a new library, not modularized enough, basically compiles every information and print output into file
 void getUsers(FILE* f_out, t_BLOCK *addr[])
 {
-    t_tree T[AMT_3];    
+    t_tree T[AMT_3];
+    t_node *new_node;
     t_subj subject;
     char s_agency[AMT_3][LENGTH_3], s_account[AMT_4][LENGTH_4];
-    numsToSTACK(MIN_3, MAX_3, AMT_3, LENGTH_3, s_agency);
-    numsToSTACK(MIN_4, MAX_4, AMT_4, LENGTH_4, s_account);
 
     char NIL = '\0';
     char *child;
     size_t i, rand_i, rand_j;
     
+    char folder[20];
+    FILE *f_temp;
+
+    numsToSTACK(MIN_3, MAX_3, AMT_3, LENGTH_3, s_agency);
+    numsToSTACK(MIN_4, MAX_4, AMT_4, LENGTH_4, s_account);
+
     for ( i=0; i<AMT_3; ++i ){ //initialize tree for dependent data
         initTree(T+i, s_agency[i]);
     }
@@ -104,12 +109,12 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
         do{
             rand_j = rand()%AMT_4;
             while ( rand_j < AMT_4 ){
-                if ( child = uniqueChild(T+rand_i,s_account[rand_j]) )
+                if ( child = uniqueNodeData(T+rand_i,s_account[rand_j]) )
                     break;
                 ++rand_j;
             }
         } while (!child);
-        insertChild(T+rand_i, child);
+        insertNode(T+rand_i, initNode(new_node), child);
         subject.attribute_3 = s_agency[rand_i];
         subject.attribute_4 = child;
          
@@ -123,6 +128,16 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
         free(subject.attribute_2);
     }
     addr[ID]->size -= i;
+
+    system("rm -rf clients; mkdir -p clients");
+    for ( i=0; i<AMT_3; ++i ){ //print every tree node
+        strcpy(folder,"clients/");
+        strcat(folder, T[i].data);
+        f_temp = fopen(folder, "a");
+        printTree(T[i].root, f_temp);
+        folder[0] = '\0';
+        fclose(f_temp);
+    }
 
     for ( i=0; i<AMT_3; ++i ){ //free every tree node
         eraseTree(T[i].root, T+i);
