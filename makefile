@@ -9,9 +9,6 @@ OBJS += $(OBJDIR)/manipulate_data.o
 
 MAIN = $(OBJDIR)/main.o
 
-#remove comment to activate debug
-#$(info objs: $(OBJS))
-
 .PHONY : clean all debug
 
 all: run
@@ -29,7 +26,7 @@ $(MAIN): main.c
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	gcc -c $< -o $@
 
-debug : build
-	gcc -g $(OBJS) -o debug.out
+debug : main.c $(SRCDIR)/*.c
+	gcc -g main.c $(SRCDIR)/*.c -o debug.out
 clean :
-	-rm -rf run data.csv $(OBJDIR) agencies debug.out
+	-rm -rf run data.csv $(OBJDIR) debug.out
