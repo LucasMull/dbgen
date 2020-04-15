@@ -13,7 +13,7 @@ main.c is just an example code to go by, every important library functions are l
          
 main.c will generate a bank's client database of 2million individuals. Each row represents a client, with each column pertaining to a particular data about its client. The first column indicates a unique ID, followed by the client's agency, an account with a unique value to his agency, and his/her name.
 Because the third column (account) is dependant on the second (agency), it will check for any occurrence of its current value in the agency's tree of accounts,and will add it's value to the tree if there is none. 
-The code's speed (in this example case) is directly affected by the amount of individuals to be generated (as in DBSIZE) and the amount of agencies available (as in AMT_3). More agencies means fewer accounts being verified for duplicates, and as the number of individuals increases, so must follow the number of agencies if you wish to increase the likelihood of coming across a unique account in fewer tries.
+The code's speed (in this example case) is directly affected by the amount of individuals to be generated (as in DBSIZE) and the amount of agencies available (as in AMT_3). More agencies means fewer accounts being verified for duplicates, and as the number of individuals increases, so must follow the number of agencies to increase the likelihood of coming across a unique account in fewer tries.
 
 ## COMPILE AND EXECUTION
 
