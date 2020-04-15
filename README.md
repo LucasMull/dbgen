@@ -1,7 +1,7 @@
 # FAKE DATABASE GENERATOR
 ### C library for compiling of fake databases
 
-My aim is to create a library that I can use throughout my college term, so that I can easily generate fake data for manipulation.
+generate_table a library for generating fake data for manipulation.
 
 There should be some documentation coming when I do learn how to make a proper one, until then I'll just keep on commenting everything relevant.
 
@@ -17,7 +17,7 @@ The code's speed (in this example case) is directly affected by the amount of in
 
 ## COMPILE AND EXECUTION
 
-type 'make' to create the 'run' executable, 'make clean' before recompiling, and 'make debug' if you wish to debug with gdb.
+type 'make' to create the 'run' executable, 'make clean' before recompiling, and 'make debug' to debug with gdb.
 
 database will be stored in data.csv by default
 
