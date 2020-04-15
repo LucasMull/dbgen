@@ -98,7 +98,7 @@ char *uniqueNodeData(t_tree *T, char *str)
     aux = T->root;
 
     while (aux != NULL){
-        cmp = strcmp(child, aux->data);
+        cmp = strcmp(str, aux->data);
         if ( cmp == 0 ){
             return NULL;
         } else if ( cmp > 0 ){
