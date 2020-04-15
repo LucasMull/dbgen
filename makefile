@@ -32,4 +32,4 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 debug : build
 	gcc -g $(OBJS) -o debug.out
 clean :
-	-rm -rf run data.csv $(OBJDIR) debug.out
+	-rm -rf run data.csv $(OBJDIR) agencies debug.out
