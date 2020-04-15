@@ -43,17 +43,55 @@ void initTree(t_tree *T, char *tag)
 {
     assert(tag);
 
-    T->size = 0;
     T->data = tag;
+    T->size = 0;
     T->root = NULL;
 }
+
+t_node *initNode(t_node *new_node)
+{
+    new_node = (t_node*)malloc(sizeof(t_node));
+    if (badAlloc(new_node)) return NULL;
+
+    new_node->data = NULL;
+    new_node->p = NULL;
+    new_node->l = NULL;
+    new_node->r = NULL;
+
+    return new_node;
+}
+
+//insert node into tree respecting the binary tree format
+t_node *insertNode(t_tree *T, t_node *node, char *str)
+{
+    t_node *aux1, *aux2 = NULL;
+    int cmp; //where strcmp() return value will be stored;
+
+    node->data = str;
+    aux1 = T->root;
+    while( aux1 != NULL ){
+        aux2=aux1;
+        cmp = strcmp(node->data, aux1->data);
+        if ( cmp < 0 ){
+            aux1 = aux1->l;
+        } else aux1 = aux1->r;
+    }
+
+    node->p = aux2;
+    if ( aux2 == NULL ){
+        T->root = node;
+    } else if (strcmp(node->data, aux2->data) < 0){
+        aux2->l = node;
+    } else aux2->r = node;
+    ++T->size;
+
+    return node;
+}
+
 //check potential child for it's uniqueness among already
 //assigned children. If unique, return child's data address
 //otherwise return NULL.
-
-//I should implement a limiter on how many functions calls can be
-//made before it gives up
-char *uniqueChild(t_tree *T, char *child)
+char *uniqueNodeData(t_tree *T, char *str)
 {
     t_node *aux;
     int cmp;
@@ -67,45 +105,14 @@ char *uniqueChild(t_tree *T, char *child)
             aux = aux->r;
         } else aux = aux->l;
     }
-    return child;
+    return str;
 }
 
-//insert child into tree respecting the binary tree format
-void insertChild(t_tree *T, char *child){
-    t_node *new_node;
-    t_node *aux1, *aux2 = NULL;
-    int cmp; //where strcmp() return value will be stored;
-
-    new_node = (t_node*)malloc(sizeof(t_node));
-    if (badAlloc(new_node)) exit(1);
-
-    new_node->data = child;
-    new_node->p = NULL;
-    new_node->l = NULL;
-    new_node->r = NULL;
-    aux1 = T->root;
-    while( aux1 != NULL ){
-        aux2=aux1;
-        cmp = strcmp(new_node->data, aux1->data);
-        if ( cmp < 0 ){
-            aux1 = aux1->l;
-        } else aux1 = aux1->r;
-    }
-
-    new_node->p = aux2;
-    if ( aux2 == NULL ){
-        T->root = new_node;
-    } else if (strcmp(new_node->data, aux2->data) < 0){
-        aux2->l = new_node;
-    } else aux2->r = new_node;
-    ++T->size;
-}
-
-void printTree(t_node *node){
+void printTree(t_node *node, FILE *stream){
     if ( node ){
-        printTree(node->l);
-        printTree(node->r);
-        fprintf(stdout,"%s ",node->data);
+        printTree(node->l, stream);
+        printTree(node->r, stream);
+        fprintf(stream,"%s\n",node->data);
     }
 }
 

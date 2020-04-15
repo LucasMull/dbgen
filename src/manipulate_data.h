@@ -39,7 +39,8 @@ occurence, and the child address if there isn't.
 Should probably turn this into its own library.
 */
 void initTree(t_tree *T, char *tag);
-char *uniqueChild(t_tree *T, char *child);
-void insertChild(t_tree *T, char *child);
-void printTree(t_node *node);
+t_node *initNode(t_node *node);
+t_node *insertNode(t_tree *T, t_node *new_node, char *str);
+char *uniqueNodeData(t_tree *T, char *str);
+void printTree(t_node *node, FILE* stream);
 void eraseTree(t_node *node, t_tree *T);
