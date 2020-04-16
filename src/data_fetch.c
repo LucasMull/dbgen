@@ -68,7 +68,7 @@ pad = 200 , means it will decrement from 2000 to 1000,
 rand() used in each padding, from a range of last to last+pad makes sure each random number 
     is unique, but also lower than the previous one
 */
-void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digits)
+void numsToHEAP(t_BLOCK *BLOCK, long int first, long int last, size_t amount, size_t digits)
 {
     unsigned int pad;
     
@@ -95,12 +95,12 @@ void numsToHEAP(t_BLOCK *BLOCK, int first, int last, size_t amount, size_t digit
         BLOCK->data[amount] = (char*)malloc(sizeof(char)*digits);
         if (badAlloc(BLOCK->data[amount])) exit(1);
 
-        snprintf(BLOCK->data[amount],digits-1,"%d",last+rand()%pad);
+        snprintf(BLOCK->data[amount],digits-1,"%ld",last+rand()%pad);
         last -= pad;
     }
 }
 
-void numsToSTACK(int first, int last, size_t amount, size_t digits, char STACK[][digits])
+void numsToSTACK(long int first, long int last, size_t amount, size_t digits, char STACK[][digits])
 {
     unsigned int pad;
     
@@ -119,7 +119,7 @@ void numsToSTACK(int first, int last, size_t amount, size_t digits, char STACK[]
 
     last -= pad;
     while ( amount-- > 0 ){
-        snprintf(STACK[amount],digits-1,"%d",last+rand()%pad);
+        snprintf(STACK[amount],digits-1,"%ld",last+rand()%pad);
         last -= pad;
     }
 }

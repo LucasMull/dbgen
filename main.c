@@ -56,7 +56,7 @@ int main(void)
     fclose(f_name);    
     fileToBLOCK(f_surnam, HEAP.addr[SURNAME]);    
     fclose(f_surnam);
-
+    
     numsToHEAP(&b_ID, MIN_2, MAX_2, AMT_2, LENGTH_2);
 
     f_out = fopen("data.csv", "w");
