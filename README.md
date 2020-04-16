@@ -1,13 +1,13 @@
 # FAKE DATABASE GENERATOR
-### C library for compiling of fake databases
+### C library for compiling fake databases
 
-generate_table a library for generating fake data for manipulation.
+generate_table is a library for generating fake data for manipulation.
 
 There should be some documentation coming when I do learn how to make a proper one, until then I'll just keep on commenting everything relevant.
 
 ## IMPORTANT NOTES
 
-all the pre-processing directives are located in src/data_fetch.h, which are crucial on generating static array data with dynamic user-defined sizes, also serves as documentation for each data to be generated.
+all the pre-processing directives are located in src/data_fetch.h, which are crucial on generating static array data with dynamic defined sizes, also serves as documentation for each data to be generated.
 
 main.c is just an example code to go by, every important library functions are located at .h/.c files in src folder
          
@@ -21,12 +21,10 @@ type 'make' to create the 'run' executable, 'make clean' before recompiling, and
 
 database will be stored in data.csv by default
 
-content file contains pre-existing data to be dynamically manipulated in the heap, there is a nome.txt and sobrenome.txt in there by default, which are used in main.c to compile fake names
+content file contains pre-existing data to be dynamically manipulated in the heap, there is a nome.txt and sobrenome.txt in there by default, that are used in main.c to compile fake names
 
 ## TO BE FIXED/IMPLEMENTED
         
 * sorting function for binary tree
 
 * iterative method to free each tree node (maybe)
-
-* change to a datatype that allows for more decimal digits
