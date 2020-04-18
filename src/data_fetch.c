@@ -5,6 +5,7 @@
 #include <locale.h>
 #include <string.h>
 #include <time.h>
+#include <limits.h>
 
 //Initialize BLOCK in a HEAP, and assign it's address to an index in the HEAP,
 //the maximum amount of BLOCKS that can be created is defined in TOTAL_BLOCKS
@@ -41,13 +42,16 @@ void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
 }
 
 //Read file and store each line as a string value of index i in the array
-void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK)
+void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK, size_t lntotal)
 {
     size_t i;
     char temp[STRLEN];
 
+    if (!lntotal)
+        lntotal = INT_MAX;
+
     i = 0;
-    while( fgets(temp, STRLEN-1, f_read) ){
+    while( (fgets(temp, STRLEN-1, f_read)) && (i < lntotal) ){
         BLOCK->data =(char**)realloc(BLOCK->data, sizeof(char*)*(i+1));
         if (badAlloc(BLOCK->data)) exit(1);
         BLOCK->data[i] = strndup(temp,strlen(temp)-1);

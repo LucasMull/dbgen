@@ -53,7 +53,8 @@ t_node *initNode(t_node *new_node)
     new_node = (t_node*)malloc(sizeof(t_node));
     if (badAlloc(new_node)) return NULL;
 
-    new_node->data = NULL;
+    new_node->data1 = NULL;
+    new_node->data2 = NULL;
     new_node->p = NULL;
     new_node->l = NULL;
     new_node->r = NULL;
@@ -62,16 +63,21 @@ t_node *initNode(t_node *new_node)
 }
 
 //insert node into tree respecting the binary tree format
-t_node *insertNode(t_tree *T, t_node *node, char *str)
+t_node *insertNode(t_tree *T, t_node *node, char *str1, char *str2)
 {
     t_node *aux1, *aux2 = NULL;
     int cmp; //where strcmp() return value will be stored;
 
-    node->data = str;
+    if (str1){
+        node->data1 = str1;
+    }
+    if (str2){
+        node->data2 = str2;
+    }
     aux1 = T->root;
     while( aux1 != NULL ){
         aux2=aux1;
-        cmp = strcmp(node->data, aux1->data);
+        cmp = strcmp(node->data1, aux1->data1);
         if ( cmp < 0 ){
             aux1 = aux1->l;
         } else aux1 = aux1->r;
@@ -80,7 +86,7 @@ t_node *insertNode(t_tree *T, t_node *node, char *str)
     node->p = aux2;
     if ( aux2 == NULL ){
         T->root = node;
-    } else if (strcmp(node->data, aux2->data) < 0){
+    } else if (strcmp(node->data1, aux2->data1) < 0){
         aux2->l = node;
     } else aux2->r = node;
     ++T->size;
@@ -98,7 +104,7 @@ char *uniqueNodeData(t_tree *T, char *str)
     aux = T->root;
 
     while (aux != NULL){
-        cmp = strcmp(str, aux->data);
+        cmp = strcmp(str, aux->data1);
         if ( cmp == 0 ){
             return NULL;
         } else if ( cmp > 0 ){
@@ -112,7 +118,11 @@ void printTree(t_node *node, FILE *stream){
     if ( node ){
         printTree(node->l, stream);
         printTree(node->r, stream);
-        fprintf(stream,"%s\n",node->data);
+        if (node->data1)
+            fprintf(stream,"%s",node->data1);
+        if (node->data2)
+            fprintf(stream,",%s",node->data2);
+        fprintf(stream,"\n");
     }
 }
 
