@@ -62,7 +62,3 @@ void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK, size_t lntotal);
 void numsToHEAP(t_BLOCK *BLOCK, long int first, long int last, size_t amount, size_t digits);
 
 void numsToSTACK(long int first, long int last, size_t amount, size_t digits, char STACK[][digits]);
-
-void stringSwap(char **str1_ptr, char **str2_ptr);
-
-int badAlloc(void *ptr);

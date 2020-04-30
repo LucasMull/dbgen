@@ -1,9 +1,48 @@
 # FAKE DATABASE GENERATOR
-### C library for compiling fake databases
 
-generate_table is a library for generating fake data for manipulation.
+## DESCRIPTION
 
-There should be some documentation coming when I do learn how to make a proper one, until then I'll just keep on commenting everything relevant.
+generate_table provides tools for generating fake databases with simple yet efficient libraries; data_fetch and manipulate_data. 
+
+### data_fetch
+
+data_fetch provides functions pertaining to the dynamic extraction of data from files, and to generating numerical data at runtime, that can be stored either dynamically or statically, but will need predefined length's array in the latter.
+
+For dynamic extraction, each array is initialized with the **initBlock()** function, that is then assigned to a new (t_BLOCK)BLOCK object, and stored at (char\*\*)BLOCK.data; the total amount of chunks of data stored is stored in (size_t)BLOCK.size .
+
+Each BLOCK initialized will be assigned to the HEAP object, and may be completely (or partially) free'd from memory with the **freeBLOCK()** function. 
+
+The (t_HEAP)HEAP object responsibility is of keeping track of the BLOCKS, by pointing to each of them with the (t_BLOCK\*)HEAP.addr attribute. The maximum amount of BLOCKS that can be created is set to a default 5 at TOTAL_BLOCKS keyword. The (size_t)HEAP.size attribute holds a value that corresponds to the amount of BLOCKs of which that particular HEAP is pointing to.
+
+The **fileToBLOCK()** function will extract file's data (each chunk of data corresponds to a line of text); and have it assigned to the BLOCK object given to it.
+
+**numsToHEAP**
+
+**numsToSTACK**
+
+**badAlloc**
+
+## manipulate_data
+
+**pickRandom()**
+
+**fetchLinear()**
+
+**stringSwap()**
+
+**shuffleArray()**
+
+**initTree()**
+
+**initNode()**
+
+**insertNode()**
+
+**uniqueNodeData()**
+
+**printTree()**
+
+**eraseTree()**
 
 ## IMPORTANT NOTES
 
@@ -25,6 +64,8 @@ content file contains pre-existing data to be dynamically manipulated in the hea
 
 ## TO BE FIXED/IMPLEMENTED
         
+* fix giveUniqueValue() function not addressing value to return_ptr
+
 * sorting function for binary tree
 
 * iterative method to free each tree node (maybe)

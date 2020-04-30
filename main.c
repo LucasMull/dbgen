@@ -6,6 +6,7 @@
 #include <locale.h>
 #include <string.h>
 #include <time.h>
+#include <assert.h>
 
 typedef struct subject {
     char *attribute_0;
@@ -36,11 +37,8 @@ int main(void)
     t_HEAP HEAP;
     t_BLOCK b_name, b_surnam, b_psw, b_ID;
 
-    if ( !locale ){
-        fprintf(stderr,"Couldn't set locale");
-    } else {
-        fprintf(stderr,"Locale is set to %s\n",locale);
-    }
+    assert(locale);
+    fprintf(stderr,"Locale is set to %s\n",locale);
     
     initBLOCK(&b_name, &HEAP); //init and assign b_name to HEAP.addr[0]
     initBLOCK(&b_surnam, &HEAP); //init and assign b_surnam to HEAP.addr[1]
@@ -48,31 +46,30 @@ int main(void)
     initBLOCK(&b_psw, &HEAP); //init and assign b_psw to HEAP.addr[3]
     
     f_name = fopen("content/nomes.txt", "r"); 
-    f_surnam = fopen("content/sobrenomes.txt", "r"); 
-    f_psw = fopen("content/passwords.txt", "r"); 
-
-    if ( !f_name )
-        fprintf(stderr,"Couldn't open nomes.txt");
-    if ( !f_surnam )
-        fprintf(stderr,"Couldn't open sobrenomes.txt");
-    if ( !f_psw )
-        fprintf(stderr,"Couldn't open sobrenomes.txt");
-  
+    assert(f_name);
     fileToBLOCK(f_name, HEAP.addr[NAME], 0);
     fclose(f_name);    
+
+    f_surnam = fopen("content/sobrenomes.txt", "r"); 
+    assert(f_surnam);
     fileToBLOCK(f_surnam, HEAP.addr[SURNAME], 0);    
     fclose(f_surnam);
+
+    f_psw = fopen("content/passwords.txt", "r"); 
+    assert(f_psw);
     fileToBLOCK(f_psw, HEAP.addr[PSW], DBSIZE);    
     fclose(f_psw);
-    
+  
     numsToHEAP(&b_ID, MIN_2, MAX_2, AMT_2, LENGTH_2);
 
     f_out = fopen("data.csv", "w");
+    assert(f_out);
     getUsers(f_out, HEAP.addr); //the brain
     fclose(f_out);
 
-    for ( i=0; i<=HEAP.size; ++i )
+    for ( i = 0 ; i <= HEAP.size ; ++i ){
         freeBLOCK(HEAP.addr[i], 0);
+    }
 
     return 0;
 }
@@ -87,7 +84,7 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
 
     char NIL = '\0';
     char *acc;
-    size_t i, rand_i, rand_j;
+    size_t i, temp_i;
     
     char folder[20];
     FILE *f_temp;
@@ -95,37 +92,35 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
     numsToSTACK(MIN_3, MAX_3, AMT_3, LENGTH_3, s_agency);
     numsToSTACK(MIN_4, MAX_4, AMT_4, LENGTH_4, s_account);
 
-    for ( i=0; i<AMT_3; ++i ){ //initialize tree for dependent data
+    for ( i = 0 ; i < AMT_3 ; ++i ){ //initialize tree for dependent data
         initTree(T+i, s_agency[i]);
     }
     
     shuffleArray(addr[ID]);
-    for ( i=0; i<DBSIZE; ++i ){
+    for ( i = 0 ; i < DBSIZE ; ++i ){
 
         // THIS CREATES ATTRIBUTE 0 AND 1
         subject.attribute_0 = pickRandom(addr[NAME]);
         subject.attribute_1[0] = pickRandom(addr[SURNAME]);
-        if (strlen(subject.attribute_1[0]) <= 3){
+        if ( strlen(subject.attribute_1[0]) > 3 ){
+            subject.attribute_1[1] = &NIL;
+        } else {
             subject.attribute_1[1] = pickRandom(addr[SURNAME]);
-        } else subject.attribute_1[1] = &NIL;
+        }
 
         // THIS CREATES ATTRIBUTE 2
-        subject.attribute_2 = fetchLinear(addr[ID], i);
+        subject.attribute_2 = pickIndex(addr[ID], i);
 
         //THIS CREATES ATTRIBUTE 3 AND 4 (3 is a requisite for 4)
-        rand_i = rand()%AMT_3;
-        do{
-            rand_j = rand()%AMT_4;
-            while ( rand_j < AMT_4 ){
-                if ( acc = uniqueNodeData(T+rand_i,s_account[rand_j]) )
-                    break;
-                ++rand_j;
-            }
-        } while (!acc);
-        insertNode(T+rand_i,initNode(new_node),acc,pickRandom(addr[PSW]));
-        subject.attribute_3 = s_agency[rand_i];
+        temp_i = rand() % AMT_3;
+        acc = find_xData(T+temp_i, AMT_4, LENGTH_4, s_account);
+        assert(acc); //can't find exclusive members to tree
+
+        //ARRUMAR j SOLTO QUE DEVERIA VIR DE exclToTree()
+        insertNode( T+temp_i, initNode(new_node), acc, pickRandom(addr[PSW]) );
+
+        subject.attribute_3 = s_agency[temp_i];
         subject.attribute_4 = acc;
-         
         // PRINTS DATABASE TO OUTPUT STREAM 
         fprintf(f_out,"%s,%s,%s,%s %s %s\n",subject.attribute_2,
                                             subject.attribute_3, 
@@ -136,9 +131,10 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
         free(subject.attribute_2);
     }
     addr[ID]->size -= i;
+    assert( addr[ID]->size == 0 );
 
     system("rm -rf clients; mkdir -p clients");
-    for ( i=0; i<AMT_3; ++i ){ //print every tree node
+    for ( i = 0 ;  i < AMT_3 ; ++i ){ //print every tree node
         strcpy(folder,"clients/");
         strcat(folder, T[i].data);
         f_temp = fopen(folder, "a");
@@ -147,7 +143,7 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
         fclose(f_temp);
     }
 
-    for ( i=0; i<AMT_3; ++i ){ //free every tree node
+    for ( i = 0 ; i < AMT_3 ; ++i ){ //free every tree node
         eraseTree(T[i].root, T+i);
     }
 }

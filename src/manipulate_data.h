@@ -25,7 +25,7 @@ typedef struct tree {
 
 char *pickRandom(t_BLOCK *BLOCK);
 
-char *fetchLinear(t_BLOCK *BLOCK, size_t i);
+char *pickIndex(t_BLOCK *BLOCK, size_t i);
 
 void stringSwap(char **str1_ptr, char **str2_ptr);
 
@@ -42,6 +42,7 @@ Should probably turn this into its own library.
 void initTree(t_tree *T, char *tag);
 t_node *initNode(t_node *node);
 t_node *insertNode(t_tree *T, t_node *new_node, char *str1, char *str2);
-char *uniqueNodeData(t_tree *T, char *str);
+char *xData(t_tree *T, char *str);
+char *find_xData(t_tree *T, size_t amt, size_t length, char s_array[][length]);
 void printTree(t_node *node, FILE* stream);
 void eraseTree(t_node *node, t_tree *T);
