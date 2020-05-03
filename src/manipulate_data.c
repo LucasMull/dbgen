@@ -147,7 +147,7 @@ char *xData(t_tree *T, char *str)
     return str;
 }
 //Search and return an exclusive data in the array not present in any tree's nodes
-char *find_xData(t_tree *T, size_t amt, size_t length, char s_array[][length])
+char *findxData(t_tree *T, size_t amt, size_t length, char s_array[][length])
 {
     size_t i, temp_i;
     char *ptr = NULL;

@@ -44,6 +44,6 @@ t_node *initNode(t_node *node);
 t_node *insertNode(t_tree *T, t_node *node, char *str, ...);
 void parseStrIntoNode(t_node *node, char *str, va_list ap);
 char *xData(t_tree *T, char *str);
-char *find_xData(t_tree *T, size_t amt, size_t length, char s_array[][length]);
+char *findxData(t_tree *T, size_t amt, size_t length, char s_array[][length]);
 void printTree(t_node *node, FILE* stream);
 void eraseTree(t_node *node, t_tree *T);
