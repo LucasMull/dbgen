@@ -75,15 +75,15 @@ int main(void)
 void getUsers(FILE* f_out, t_BLOCK *addr[])
 {
     t_tree T[AMT_3];
-    t_node *new_node;
+    t_node *new_node = NULL;
     t_subj client;
     char s_agency[AMT_3][LENGTH_3], s_account[AMT_4][LENGTH_4];
 
-    char NIL = '\0';
-    char *acc;
+    char *acc, *psw;
     size_t i, temp_i;
     
     char folder[20];
+    char NIL = '\0';
     FILE *f_temp;
 
     numsToSTACK(MIN_3, MAX_3, AMT_3, LENGTH_3, s_agency);
@@ -112,9 +112,10 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
         temp_i = rand() % AMT_3;
         acc = find_xData(T+temp_i, AMT_4, LENGTH_4, s_account);
         assert(acc); //can't find exclusive members to tree
+        psw = pickRandom(addr[PSW]);
+        assert(psw);
 
-        //ARRUMAR j SOLTO QUE DEVERIA VIR DE exclToTree()
-        insertNode( T+temp_i, initNode(new_node), acc, pickRandom(addr[PSW]) );
+        insertNode( T+temp_i, initNode(new_node), "%s %s", acc, psw );
 
         client.agency = s_agency[temp_i];
         client.account = acc;
