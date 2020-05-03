@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <assert.h>
 
 //randomly pick data index and returns its address
@@ -58,8 +59,9 @@ t_node *initNode(t_node *new_node)
     new_node = (t_node*)malloc(sizeof(t_node));
     assert(new_node);
 
-    new_node->data1 = NULL;
-    new_node->data2 = NULL;
+    new_node->data = NULL;
+    new_node->count = 0;
+
     new_node->p = NULL;
     new_node->l = NULL;
     new_node->r = NULL;
@@ -68,22 +70,20 @@ t_node *initNode(t_node *new_node)
 }
 
 //insert node into tree respecting the binary tree format
-t_node *insertNode(t_tree *T, t_node *node, char *str1, char *str2)
+t_node *insertNode(t_tree *T, t_node *node, char *str, ...)
 {
     t_node *aux1, *aux2 = NULL;
-    int cmp; //where strcmp() return value will be stored;
-
-    if (str1){
-        node->data1 = str1;
-    }
-    if (str2){
-        node->data2 = str2;
-    }
+    va_list ap;
+    
+    //fetch node data
+    va_start(ap, str);
+    parseStrIntoNode(node, str, ap);
+    va_end(ap);
 
     aux1 = T->root;
     while ( aux1 != NULL ){
         aux2 = aux1;
-        if ( strcmp(node->data1, aux1->data1) < 0 ){
+        if ( strcmp(node->data[0], aux1->data[0]) < 0 ){
             aux1 = aux1->l;
         } else aux1 = aux1->r;
     }
@@ -91,7 +91,7 @@ t_node *insertNode(t_tree *T, t_node *node, char *str1, char *str2)
     node->p = aux2;
     if ( aux2 == NULL ){
         T->root = node;
-    } else if ( strcmp(node->data1, aux2->data1) < 0 ){
+    } else if ( strcmp(node->data[0], aux2->data[0]) < 0 ){
         aux2->l = node;
     } else aux2->r = node;
 
@@ -99,18 +99,45 @@ t_node *insertNode(t_tree *T, t_node *node, char *str1, char *str2)
 
     return node;
 }
+
+void parseStrIntoNode(t_node *node, char *str, va_list ap){
+    char *ptr;
+    size_t i;
+
+    assert(node->count == 0);
+
+    while(*str){
+        if ( *str++ == '%' ){
+            switch (*str){
+                case 's' :
+                    ++node->count;
+                    break;
+                default:
+                    assert(*str == 's');
+                    break; //defensive break just in case
+            }
+        }
+    }
+
+    node->data = (char**)malloc(sizeof(char*) * node->count);
+    assert(node->data);
+    
+    i = 0;
+    while (i < node->count){
+        ptr = va_arg(ap, char*);
+        node->data[i++] = strndup(ptr, strlen(ptr));
+    }
+}
+
 //check if data holds exclusivity amongst tree's nodes
 char *xData(t_tree *T, char *str)
 {
     t_node *aux;
     int cmp;
 
-    assert(T);
-    assert(str);
-
     aux = T->root;
     while (aux != NULL){
-        cmp = strcmp(str, aux->data1);
+        cmp = strcmp(str, aux->data[0]);
         if ( cmp == 0 ){
             return NULL;
         } else if ( cmp > 0 ){
@@ -129,7 +156,7 @@ char *find_xData(t_tree *T, size_t amt, size_t length, char s_array[][length])
 
     temp_i = i;
     while ( i < amt ){
-        if ( ptr = xData(T, s_array[i]) ){
+        if ((ptr = xData(T, s_array[i])) != NULL){
             return ptr;
         }
         ++i;
@@ -137,7 +164,7 @@ char *find_xData(t_tree *T, size_t amt, size_t length, char s_array[][length])
 
     i = temp_i;
     while ( i >= 0 ){
-        if ( ptr = xData(T, s_array[i]) ){
+        if ((ptr = xData(T, s_array[i])) != NULL){
             return ptr;
         }
         --i;
@@ -147,14 +174,23 @@ char *find_xData(t_tree *T, size_t amt, size_t length, char s_array[][length])
 }
 
 void printTree(t_node *node, FILE *stream){
+    size_t count;
+    char delim;
+
     if ( node ){
         printTree(node->l, stream);
         printTree(node->r, stream);
-        if (node->data1)
-            fprintf(stream, "%s", node->data1);
-        if (node->data2)
-            fprintf(stream, ",%s", node->data2);
-        fprintf(stream, "\n");
+        
+        count = 0;
+        while( count < node->count ){
+            if ( count+1 < node->count ){
+               delim = ','; 
+            } else delim = '\n';
+
+            fprintf(stream, "%s%c", node->data[count], delim);
+
+            ++count;
+        }
     }
 }
 
@@ -162,7 +198,12 @@ void eraseTree(t_node *node, t_tree *T){
     if ( node ){
         eraseTree(node->l, T);
         eraseTree(node->r, T);
+
+        while(node->count){
+            free(node->data[--node->count]);
+        }free(node->data);
         free(node);
+
         --T->size;
     }
 }

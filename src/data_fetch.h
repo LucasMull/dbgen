@@ -44,8 +44,8 @@
 
 
 typedef struct BLOCK {
-    size_t size;
     char **data;
+    size_t size;
 } t_BLOCK;
 
 typedef struct HEAP {

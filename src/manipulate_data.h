@@ -5,8 +5,8 @@ typedef struct node {
         struct node *r;
         struct node *p;
 
-        char *data1; //should be *void
-        char *data2; //should be *void
+        char **data; //should be *void
+        size_t count;
 } t_node;
 
 typedef struct assign {
@@ -41,7 +41,8 @@ Should probably turn this into its own library.
 */
 void initTree(t_tree *T, char *tag);
 t_node *initNode(t_node *node);
-t_node *insertNode(t_tree *T, t_node *new_node, char *str1, char *str2);
+t_node *insertNode(t_tree *T, t_node *node, char *str, ...);
+void parseStrIntoNode(t_node *node, char *str, va_list ap);
 char *xData(t_tree *T, char *str);
 char *find_xData(t_tree *T, size_t amt, size_t length, char s_array[][length]);
 void printTree(t_node *node, FILE* stream);
