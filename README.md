@@ -22,7 +22,7 @@ The **fileToBLOCK()** function will extract file's data (each chunk of data corr
 **numsToHEAP()**
 **numsToSTACK()**
 
-## manipulate_data
+### manipulate_data
 ### TO DO
 **pickRandom()**
 **pickIndex()**
