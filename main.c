@@ -9,12 +9,11 @@
 #include <assert.h>
 
 typedef struct client {
-    char *name;
-    char *surname[3]; //for surname, maximum of 3
+    char fullname[50];
     char *id;
     char *agency;
     char *account;
-} t_subj;
+} t_client;
 
 void getUsers(FILE* f_out, t_BLOCK *addr[]);
 
@@ -71,19 +70,19 @@ int main(void)
     return 0;
 }
 
-//This function needs to be updated and be made into a new library, not modularized enough, basically compiles every information and print output into file
+//requires modularization
 void getUsers(FILE* f_out, t_BLOCK *addr[])
 {
     t_tree T[AMT_3];
     t_node *new_node = NULL;
-    t_subj client;
+    t_client client;
     char s_agency[AMT_3][LENGTH_3], s_account[AMT_4][LENGTH_4];
 
     char *acc, *psw;
     size_t i, temp_i;
     
     char folder[20];
-    char NIL = '\0';
+    size_t length;
     FILE *f_temp;
 
     numsToSTACK(MIN_3, MAX_3, AMT_3, LENGTH_3, s_agency);
@@ -94,23 +93,28 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
     }
     
     shuffleArray(addr[ID]);
-    for ( i = 0 ; i < DBSIZE ; ++i ){
 
-        // THIS CREATES ATTRIBUTE 0 AND 1
-        client.name = pickRandom(addr[NAME]);
-        client.surname[0] = pickRandom(addr[SURNAME]);
-        if ( strlen(client.surname[0]) > 3 ){
-            client.surname[1] = &NIL;
-        } else {
-            client.surname[1] = pickRandom(addr[SURNAME]);
+    for ( i = 0 ; i < DBSIZE ; ++i ){
+        // THIS PICKS CLIENT'S FULLNAME
+        strncpy(client.fullname, pickRandom(addr[NAME]), 15);
+        length = strlen(client.fullname);
+        strcat(client.fullname, " ");
+        strncat(client.fullname, pickRandom(addr[SURNAME]), 15);
+        if ( (strlen(client.fullname) - length) < 4){ //add another surname
+            strcat(client.fullname, " ");
+            strncat(client.fullname, pickRandom(addr[SURNAME]), 15);
+        }
+        if ( rand() % 5 == 1 ){
+            strcat(client.fullname, " ");
+            strncat(client.fullname, pickRandom(addr[SURNAME]), 15); 
         }
 
-        // THIS CREATES ATTRIBUTE 2
+        // THIS PICKS CLIENT'S ID
         client.id = pickIndex(addr[ID], i);
 
-        //THIS CREATES ATTRIBUTE 3 AND 4 (3 is a requisite for 4)
+        //THIS PICKS CLIENT'S AGENCY AND ACCOUNT (agency is a requisite for account)
         temp_i = rand() % AMT_3;
-        acc = find_xData(T+temp_i, AMT_4, LENGTH_4, s_account);
+        acc = findxData(T+temp_i, AMT_4, LENGTH_4, s_account);
         assert(acc); //can't find exclusive members to tree
         psw = pickRandom(addr[PSW]);
         assert(psw);
@@ -120,13 +124,11 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
         client.agency = s_agency[temp_i];
         client.account = acc;
         // PRINTS DATABASE TO OUTPUT STREAM 
-        fprintf(f_out,"%s,%s,%s,%s %s %s\n",client.id,
-                                            client.agency, 
-                                            client.account, 
-                                            client.name,
-                                            client.surname[0],
-                                            client.surname[1]);
-        free(client.id); //since each pointer will only be used once
+        fprintf(f_out,"%s,%s,%s,%s\n",client.id,
+                                      client.agency, 
+                                      client.account, 
+                                      client.fullname);
+        free(client.id); //because each pointer will only be used once
     }
     addr[ID]->size -= i;
 

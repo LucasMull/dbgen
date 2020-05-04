@@ -1,9 +1,9 @@
 #include <stdio.h>
 
 #define DBSIZE 100000
-#define TOTAL_BLOCKS 5 //max possible blocks in heap
+#define TOTAL_BLOCKS 5 //maximum possible blocks in heap
 
-#define NAME 0 // << change define name to whatever you want to represent there
+#define NAME 0 // change define name to whatever you want to represent there
 #define LENGTH_0 25
 //#define MIN_0
 //#define MAX_0
@@ -40,7 +40,6 @@
 //#define AMT_5
 
 #define STRLEN 25
-#define UNDEFINED 0
 
 
 typedef struct BLOCK {
