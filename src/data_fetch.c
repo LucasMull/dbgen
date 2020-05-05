@@ -1,12 +1,9 @@
 #include "data_fetch.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <locale.h>
-#include <string.h>
-#include <time.h>
-#include <limits.h>
-#include <assert.h>
+#ifndef FILE_H
+#define FILE_H
+#include "directives.h"
+#endif
 
 //Initialize BLOCK in a HEAP, and assign it's address to an index in the HEAP,
 //the maximum amount of BLOCKS that can be created is defined in TOTAL_BLOCKS
@@ -15,14 +12,11 @@ void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP)
     static size_t i = 0;
     size_t temp_i = 0;
 
+    assert (i < TOTAL_BLOCKS);
     while(temp_i < i){ //check if BLOCK has already been initialized
         assert( HEAP->addr[temp_i++] != BLOCK );
     }
 
-    if (i >= TOTAL_BLOCKS){
-        fprintf(stderr, "Reached maximum capacity (%d) for BLOCK's creation\n", TOTAL_BLOCKS);
-        exit(1);
-    }
     BLOCK->size = 0;
     BLOCK->data = NULL;
     
@@ -40,8 +34,7 @@ void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
     for ( i = first_i ; i < BLOCK->size ; ++i ){
         free(BLOCK->data[i]);
         --temp_i;
-    }
-    BLOCK->size = temp_i;
+    } BLOCK->size = temp_i;
     
     if ( BLOCK->size == 0 ){
         free(BLOCK->data);
@@ -67,8 +60,7 @@ void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK, size_t lntotal)
         assert(BLOCK->data[i]);
 
         ++i;
-    }
-    BLOCK->size = i;
+    } BLOCK->size = i;
 }
 
 /*

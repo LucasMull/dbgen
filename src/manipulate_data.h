@@ -1,4 +1,7 @@
-#include <stdio.h>
+#ifndef FILE_H
+#define FILE_H
+#include "directives.h"
+#endif
 
 typedef struct node {
         struct node *l;
@@ -25,7 +28,7 @@ typedef struct tree {
 
 char *pickRandom(t_BLOCK *BLOCK);
 
-char *pickIndex(t_BLOCK *BLOCK, size_t i);
+char *pickAtIndex(t_BLOCK *BLOCK, size_t i);
 
 void stringSwap(char **str1_ptr, char **str2_ptr);
 

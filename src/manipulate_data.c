@@ -1,11 +1,10 @@
 #include "data_fetch.h"
 #include "manipulate_data.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <assert.h>
+#ifndef FILE_H
+#define FILE_H
+#include "directives.h"
+#endif
 
 //randomly pick data index and returns its address
 char *pickRandom(t_BLOCK *BLOCK){
@@ -13,12 +12,12 @@ char *pickRandom(t_BLOCK *BLOCK){
 }
 
 //fetch for DATA at chosen index
-char *pickIndex(t_BLOCK *BLOCK, size_t i)
+char *pickAtIndex(t_BLOCK *BLOCK, size_t i)
 {
     /* can fetch linearly only if DBSIZE 
     is smaller or equal to BLOCK size 
     AND index is smaller or equal to BLOCK size*/
-    assert( (BLOCK->size >= DBSIZE) && (i <= BLOCK->size) );
+    assert( (DBSIZE <= BLOCK->size) && (i <= BLOCK->size) );
     return BLOCK->data[i];
 }
 
@@ -40,13 +39,12 @@ void shuffleArray(t_BLOCK *BLOCK)
     size_t i;
 
     for ( i = 0 ; i < BLOCK->size ; ++i ) //shuffle
-        stringSwap( BLOCK->data + i , BLOCK->data + ( rand() % BLOCK->size ) );
+        stringSwap( BLOCK->data + i , (BLOCK->data + (rand() % BLOCK->size)) );
 }
 
 //Initialize empty tree from tag
 void initTree(t_tree *T, char *tag)
 {
-    assert(T);
     assert(tag);
 
     T->data = tag;
@@ -149,47 +147,49 @@ char *xData(t_tree *T, char *str)
 //Search and return an exclusive data in the array not present in any tree's nodes
 char *findxData(t_tree *T, size_t amt, size_t length, char s_array[][length])
 {
-    size_t i, temp_i;
+    size_t i, temp_i; 
+    size_t incr, limit;
     char *ptr = NULL;
+    short DONE = 0;
 
     i = rand() % amt;
-
     temp_i = i;
-    while ( i < amt ){
-        if ((ptr = xData(T, s_array[i])) != NULL){
-            return ptr;
-        }
-        ++i;
-    }
 
-    i = temp_i;
-    while ( i >= 0 ){
-        if ((ptr = xData(T, s_array[i])) != NULL){
-            return ptr;
+    incr = 1;
+    limit = amt;
+    do {
+        while ( i != limit ){
+            if ((ptr = xData(T, s_array[i])) != NULL){
+                return ptr;
+            }
+            i += incr;
         }
-        --i;
-    }
+        i = temp_i;
+        limit = 0;
+        incr = -1;
+    } while (++DONE < 2);
     
     return NULL;
 }
 
 void printTree(t_node *node, FILE *stream){
-    size_t count;
+    size_t i;
     char delim;
 
     if ( node ){
         printTree(node->l, stream);
         printTree(node->r, stream);
         
-        count = 0;
-        while( count < node->count ){
-            if ( count+1 < node->count ){
+        i = 0;
+        while( i < node->count ){
+            if ( i+1 < node->count ){
                delim = ','; 
             } else delim = '\n';
+           
+            fputs(node->data[i], stream);
+            fputc(delim, stream); 
 
-            fprintf(stream, "%s%c", node->data[count], delim);
-
-            ++count;
+            ++i;
         }
     }
 }
@@ -201,7 +201,7 @@ void eraseTree(t_node *node, t_tree *T){
 
         while(node->count){
             free(node->data[--node->count]);
-        }free(node->data);
+        } free(node->data);
         free(node);
 
         --T->size;

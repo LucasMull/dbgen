@@ -1,12 +1,17 @@
 #include "src/data_fetch.h"
 #include "src/manipulate_data.h"
 
+/* THIS IS INCLUDED IN MAIN.C JUST TO DOCUMENT WHICH LIBRARIES I'M USING*/
+#ifndef FILE_H
+#define FILE_H
+#include "src/directives.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
 #include <string.h>
 #include <time.h>
 #include <assert.h>
+#endif
 
 typedef struct client {
     char fullname[50];
@@ -63,8 +68,9 @@ int main(void)
     getUsers(f_out, HEAP.addr); //the brain
     fclose(f_out);
 
-    for ( i = 0 ; i <= HEAP.size ; ++i ){
-        freeBLOCK(HEAP.addr[i], 0);
+    i = 0;
+    while ( i <= HEAP.size ){
+        freeBLOCK(HEAP.addr[i++], 0);
     }
 
     return 0;
@@ -110,7 +116,7 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
         }
 
         // THIS PICKS CLIENT'S ID
-        client.id = pickIndex(addr[ID], i);
+        client.id = pickAtIndex(addr[ID], i);
 
         //THIS PICKS CLIENT'S AGENCY AND ACCOUNT (agency is a requisite for account)
         temp_i = rand() % AMT_3;
@@ -123,14 +129,14 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
 
         client.agency = s_agency[temp_i];
         client.account = acc;
-        // PRINTS DATABASE TO OUTPUT STREAM 
+        // PRINTS DATABASE TO OUTPUT STREAM
         fprintf(f_out,"%s,%s,%s,%s\n",client.id,
                                       client.agency, 
                                       client.account, 
-                                      client.fullname);
+                                      client.fullname
+        );
         free(client.id); //because each pointer will only be used once
-    }
-    addr[ID]->size -= i;
+    } addr[ID]->size -= i;
 
     system("rm -rf clients; mkdir -p clients");
     for ( i = 0 ;  i < AMT_3 ; ++i ){ //print every tree node
