@@ -1,5 +1,7 @@
 CFLAGS = -Wall -Werror -pedantic
 LDLIBS = -lm
+CC = gcc
+
 SRCDIR = src
 OBJDIR = obj
 
@@ -14,7 +16,7 @@ MAIN = $(OBJDIR)/main.o
 all: run
 
 run: build
-	gcc -o $@ $(OBJS) $(LDLIBS)
+	$(CC) -o $@ $(OBJS) $(LDLIBS)
 
 build: mkdir $(MAIN) $(OBJS)
 
@@ -22,11 +24,11 @@ mkdir:
 	-mkdir -p $(OBJDIR)
 
 $(MAIN): main.c
-	gcc -c $< -o $@ $(CFLAGS)
+	$(CC) -c $< -o $@ $(CFLAGS)
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
-	gcc -c $< -o $@ $(CFLAGS)
+	$(CC) -c $< -o $@ $(CFLAGS)
 
 debug : main.c $(SRCDIR)/*.c
-	gcc -g main.c $(SRCDIR)/*.c -o debug.out $(CFLAGS)
+	$(CC) -g main.c $(SRCDIR)/*.c -o debug.out $(CFLAGS)
 clean :
 	-rm -rf run data.csv $(OBJDIR) debug.out
