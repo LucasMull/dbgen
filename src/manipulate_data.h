@@ -12,27 +12,19 @@ typedef struct node {
         size_t count;
 } t_node;
 
-typedef struct assign {
-        t_node *start;
-        t_node *end;
-
-        char *data;
-        int size;
-} t_assign;
-
 typedef struct tree {
         t_node *root;
         char *data; //should be void*
         size_t size;
 } t_tree;
 
-char *pickRandom(t_BLOCK *BLOCK);
+char *pickRandom(t_hblock *block);
 
-char *pickAtIndex(t_BLOCK *BLOCK, size_t i);
+char *pickAtIndex(t_hblock *block, size_t i);
 
 void stringSwap(char **str1_ptr, char **str2_ptr);
 
-void shuffleArray(t_BLOCK *BLOCK);
+void shuffleArray(t_hblock *block);
 /*
 These grouped functions make use of binary tree to assign
 children data in a orderly fashion, *uniqueChild()

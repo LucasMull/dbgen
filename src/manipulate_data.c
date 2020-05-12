@@ -7,18 +7,18 @@
 #endif
 
 //randomly pick data index and returns its address
-char *pickRandom(t_BLOCK *BLOCK){
-    return BLOCK->data[ rand() % BLOCK->size ];
+char *pickRandom(t_hblock *block){
+    return block->data[ rand() % block->size ];
 }
 
 //fetch for DATA at chosen index
-char *pickAtIndex(t_BLOCK *BLOCK, size_t i)
+char *pickAtIndex(t_hblock *block, size_t i)
 {
     /* can fetch linearly only if DBSIZE 
-    is smaller or equal to BLOCK size 
-    AND index is smaller or equal to BLOCK size*/
-    assert( (DBSIZE <= BLOCK->size) && (i <= BLOCK->size) );
-    return BLOCK->data[i];
+    is smaller or equal to block size 
+    AND index is smaller or equal to block size*/
+    assert( (DBSIZE <= block->size) && (i <= block->size) );
+    return block->data[i];
 }
 
 //Pretty straightforward, swaps two string pointers
@@ -34,12 +34,12 @@ void stringSwap(char **str1_ptr, char **str2_ptr)
 }
 
 //Makes use of stringSwap(), to swap string pointers randomly
-void shuffleArray(t_BLOCK *BLOCK)
+void shuffleArray(t_hblock *block)
 {
     size_t i;
 
-    for ( i = 0 ; i < BLOCK->size ; ++i ) //shuffle
-        stringSwap( BLOCK->data + i , (BLOCK->data + (rand() % BLOCK->size)) );
+    for ( i = 0 ; i < block->size ; ++i ) //shuffle
+        stringSwap( block->data + i , (block->data + (rand() % block->size)) );
 }
 
 //Initialize empty tree from tag

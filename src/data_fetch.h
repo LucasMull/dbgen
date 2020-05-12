@@ -3,22 +3,32 @@
 #include "directives.h"
 #endif
 
-typedef struct BLOCK {
+typedef struct hblock {
     char **data;
     size_t size;
-} t_BLOCK;
+} t_hblock;
 
-typedef struct HEAP {
-    t_BLOCK *addr[TOTAL_BLOCKS];
+typedef struct heap {
+    t_hblock *addr[TOTAL_BLOCKS];
     size_t size;
-} t_HEAP;
+} t_heap;
 
-void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP);
+typedef char t_sblock;
+typedef void ptr_sblock;
 
-void freeBLOCK(t_BLOCK *BLOCK, size_t first_i);
+typedef struct stack {
+    ptr_sblock *addr[TOTAL_BLOCKS];        
+    size_t size;
+} t_stack;
 
-void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK, size_t lntotal);
+void init_h(t_hblock *block, t_heap *heap);
 
-void numsToHEAP(t_BLOCK *BLOCK, long int first, long int last, size_t amount, size_t digits);
+void init_s(t_sblock *block, t_stack *stack);
 
-void numsToSTACK(long int first, long int last, size_t amount, size_t digits, char STACK[][digits]);
+void free_h(t_hblock *block, size_t first_i);
+
+void file_to_h(FILE* f_read, t_hblock* block, size_t lntotal);
+
+void nums_to_h(t_hblock *block, long int first, long int last, size_t amount, size_t digits);
+
+void nums_to_s(long int first, long int last, size_t amount, size_t digits, char stack[][digits]);

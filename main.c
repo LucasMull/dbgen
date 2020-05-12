@@ -20,7 +20,7 @@ typedef struct client {
     char *account;
 } t_client;
 
-void getUsers(FILE* f_out, t_BLOCK *addr[]);
+void getUsers(FILE* f_out, t_hblock *addr[]);
 
 int main(void)
 {
@@ -35,54 +35,54 @@ int main(void)
 
     size_t i;    
 
-    t_HEAP HEAP;
-    t_BLOCK b_name, b_surname, b_psw, b_ID;
+    t_heap heap;
+    t_hblock b_name, b_surname, b_psw, b_ID;
 
     assert(locale);
     fprintf(stderr,"Locale is set to %s\n",locale);
     
-    initBLOCK(&b_name, &HEAP); //init and assign b_name to HEAP.addr[0]
-    initBLOCK(&b_surname, &HEAP); //init and assign b_surname to HEAP.addr[1]
-    initBLOCK(&b_ID, &HEAP); //init and assign b_ID to HEAP.addr[2]
-    initBLOCK(&b_psw, &HEAP); //init and assign b_psw to HEAP.addr[3]
+    init_h(&b_name, &heap); //init and assign b_name to heap.addr[0]
+    init_h(&b_surname, &heap); //init and assign b_surname to heap.addr[1]
+    init_h(&b_ID, &heap); //init and assign b_ID to heap.addr[2]
+    init_h(&b_psw, &heap); //init and assign b_psw to heap.addr[3]
     
     f_name = fopen("content/nomes.txt", "r"); 
     assert(f_name);
-    fileToBLOCK(f_name, HEAP.addr[NAME], 0);
+    file_to_h(f_name, heap.addr[NAME], 0);
     fclose(f_name);    
 
     f_surname = fopen("content/sobrenomes.txt", "r"); 
     assert(f_surname);
-    fileToBLOCK(f_surname, HEAP.addr[SURNAME], 0);    
+    file_to_h(f_surname, heap.addr[SURNAME], 0);    
     fclose(f_surname);
 
     f_psw = fopen("content/passwords.txt", "r"); 
     assert(f_psw);
-    fileToBLOCK(f_psw, HEAP.addr[PSW], DBSIZE);    
+    file_to_h(f_psw, heap.addr[PSW], DBSIZE);    
     fclose(f_psw);
   
-    numsToHEAP(&b_ID, MIN_2, MAX_2, AMT_2, LENGTH_2);
+    nums_to_h(&b_ID, MIN_2, MAX_2, AMT_2, LENGTH_2);
 
     f_out = fopen("data.csv", "w");
     assert(f_out);
-    getUsers(f_out, HEAP.addr); //the brain
+    getUsers(f_out, heap.addr); //the brain
     fclose(f_out);
 
     i = 0;
-    while ( i <= HEAP.size ){
-        freeBLOCK(HEAP.addr[i++], 0);
+    while ( i <= heap.size ){
+        free_h(heap.addr[i++], 0);
     }
 
     return 0;
 }
 
 //requires modularization
-void getUsers(FILE* f_out, t_BLOCK *addr[])
+void getUsers(FILE* f_out, t_hblock *addr[])
 {
     t_tree T[AMT_3];
     t_node *new_node = NULL;
     t_client client;
-    char s_agency[AMT_3][LENGTH_3], s_account[AMT_4][LENGTH_4];
+    t_sblock agency[AMT_3][LENGTH_3], account[AMT_4][LENGTH_4];
 
     char *acc, *psw;
     size_t i, temp_i;
@@ -91,11 +91,11 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
     size_t length;
     FILE *f_temp;
 
-    numsToSTACK(MIN_3, MAX_3, AMT_3, LENGTH_3, s_agency);
-    numsToSTACK(MIN_4, MAX_4, AMT_4, LENGTH_4, s_account);
+    nums_to_s(MIN_3, MAX_3, AMT_3, LENGTH_3, agency);
+    nums_to_s(MIN_4, MAX_4, AMT_4, LENGTH_4, account);
 
     for ( i = 0 ; i < AMT_3 ; ++i ){ //initialize tree for dependent data
-        initTree(T+i, s_agency[i]);
+        initTree(T+i, agency[i]);
     }
     
     shuffleArray(addr[ID]);
@@ -120,14 +120,14 @@ void getUsers(FILE* f_out, t_BLOCK *addr[])
 
         //THIS PICKS CLIENT'S AGENCY AND ACCOUNT (agency is a requisite for account)
         temp_i = rand() % AMT_3;
-        acc = findxData(T+temp_i, AMT_4, LENGTH_4, s_account);
+        acc = findxData(T+temp_i, AMT_4, LENGTH_4, account);
         assert(acc); //can't find exclusive members to tree
         psw = pickRandom(addr[PSW]);
         assert(psw);
 
         insertNode( T+temp_i, initNode(new_node), "%s %s", acc, psw );
 
-        client.agency = s_agency[temp_i];
+        client.agency = agency[temp_i];
         client.account = acc;
         // PRINTS DATABASE TO OUTPUT STREAM
         fprintf(f_out,"%s,%s,%s,%s\n",client.id,

@@ -5,44 +5,44 @@
 #include "directives.h"
 #endif
 
-//Initialize BLOCK in a HEAP, and assign it's address to an index in the HEAP,
-//the maximum amount of BLOCKS that can be created is defined in TOTAL_BLOCKS
-void initBLOCK(t_BLOCK *BLOCK, t_HEAP *HEAP)
+//Initialize block in a heap, and assign it's address to an index in the heap,
+//the maximum amount of blockS that can be created is defined in TOTAL_blockS
+void init_h(t_hblock *block, t_heap *heap)
 {
     static size_t i = 0;
     size_t temp_i = 0;
 
     assert (i < TOTAL_BLOCKS);
-    while(temp_i < i){ //check if BLOCK has already been initialized
-        assert( HEAP->addr[temp_i++] != BLOCK );
+    while(temp_i < i){ //check if block has already been initialized
+        assert( heap->addr[temp_i++] != block );
     }
 
-    BLOCK->size = 0;
-    BLOCK->data = NULL;
+    block->size = 0;
+    block->data = NULL;
     
-    HEAP->size = i;
-    HEAP->addr[i++] = BLOCK;
+    heap->size = i;
+    heap->addr[i++] = block;
 }
 
 //Free pointers allocated to the particular block
-//EX: first_i = j , means all pointers from index j up to BLOCK->size will be free'd
-void freeBLOCK(t_BLOCK *BLOCK, size_t first_i)
+//EX: first_i = j , means all pointers from index j up to block->size will be free'd
+void free_h(t_hblock *block, size_t first_i)
 {
     size_t i, temp_i;
 
-    temp_i = BLOCK->size;
-    for ( i = first_i ; i < BLOCK->size ; ++i ){
-        free(BLOCK->data[i]);
+    temp_i = block->size;
+    for ( i = first_i ; i < block->size ; ++i ){
+        free(block->data[i]);
         --temp_i;
-    } BLOCK->size = temp_i;
+    } block->size = temp_i;
     
-    if ( BLOCK->size == 0 ){
-        free(BLOCK->data);
+    if ( block->size == 0 ){
+        free(block->data);
     }
 }
 
 //Read file and store each line as a string value of index i in the array
-void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK, size_t lntotal)
+void file_to_h(FILE* f_read, t_hblock* block, size_t lntotal)
 {
     size_t i;
     char temp[STRLEN];
@@ -53,14 +53,14 @@ void fileToBLOCK(FILE* f_read, t_BLOCK* BLOCK, size_t lntotal)
 
     i = 0;
     while ( (fgets(temp, STRLEN-1, f_read)) && (i < lntotal) ){
-        BLOCK->data = (char**)realloc(BLOCK->data, sizeof(char*) * (i + 1));
-        assert(BLOCK->data);
+        block->data = (char**)realloc(block->data, sizeof(char*) * (i + 1));
+        assert(block->data);
 
-        BLOCK->data[i] = strndup(temp, strlen(temp)-1);
-        assert(BLOCK->data[i]);
+        block->data[i] = strndup(temp, strlen(temp)-1);
+        assert(block->data[i]);
 
         ++i;
-    } BLOCK->size = i;
+    } block->size = i;
 }
 
 /*
@@ -74,7 +74,7 @@ pad = 200 , means it will decrement from 2000 to 1000,
 rand() used in each padding, from a range of last to last+pad makes sure each random number 
     is unique, but also lower than the previous one
 */
-void numsToHEAP(t_BLOCK *BLOCK, long int first, long int last, size_t amount, size_t digits)
+void nums_to_h(t_hblock *block, long int first, long int last, size_t amount, size_t digits)
 {
     unsigned int pad;
     
@@ -83,21 +83,21 @@ void numsToHEAP(t_BLOCK *BLOCK, long int first, long int last, size_t amount, si
 
     pad = (last - first) / amount;
 
-    BLOCK->data = (char**)malloc(sizeof(char*) * amount);
-    assert(BLOCK->data);
-    BLOCK->size = amount;
+    block->data = (char**)malloc(sizeof(char*) * amount);
+    assert(block->data);
+    block->size = amount;
 
     last -= pad;
     while ( amount-- > 0 ){
-        BLOCK->data[amount] = (char*)malloc(sizeof(char) * digits);
-        assert(BLOCK->data[amount]);
-        snprintf( BLOCK->data[amount] , digits-1 , "%ld" , last+(rand()%pad) );
+        block->data[amount] = (char*)malloc(sizeof(char) * digits);
+        assert(block->data[amount]);
+        snprintf( block->data[amount] , digits-1 , "%ld" , last+(rand()%pad) );
 
         last -= pad;
     }
 }
 
-void numsToSTACK(long int first, long int last, size_t amount, size_t digits, char STACK[][digits])
+void nums_to_s(long int first, long int last, size_t amount, size_t digits, char STACK[][digits])
 {
     unsigned int pad;
     
