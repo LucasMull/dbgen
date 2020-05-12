@@ -31,4 +31,4 @@ void file_to_h(FILE* f_read, t_hblock* block, size_t lntotal);
 
 void nums_to_h(t_hblock *block, long int first, long int last, size_t amount, size_t digits);
 
-void nums_to_s(long int first, long int last, size_t amount, size_t digits, char stack[][digits]);
+void nums_to_s(long int first, long int last, size_t amount, size_t digits, t_sblock block[][digits]);

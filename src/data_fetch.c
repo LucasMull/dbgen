@@ -97,7 +97,7 @@ void nums_to_h(t_hblock *block, long int first, long int last, size_t amount, si
     }
 }
 
-void nums_to_s(long int first, long int last, size_t amount, size_t digits, char STACK[][digits])
+void nums_to_s(long int first, long int last, size_t amount, size_t digits, t_sblock block[][digits])
 {
     unsigned int pad;
     
@@ -108,7 +108,7 @@ void nums_to_s(long int first, long int last, size_t amount, size_t digits, char
 
     last -= pad;
     while ( amount-- > 0 ){
-        snprintf( STACK[amount] , digits-1 , "%ld" , last+(rand()%pad) );
+        snprintf( block[amount] , digits-1 , "%ld" , last+(rand()%pad) );
         last -= pad;
     }
 }
