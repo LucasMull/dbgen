@@ -11,19 +11,20 @@ All the pre-processing directives are located at src/directives.h, which are nec
 
 data_fetch provides functions pertaining to the dynamic extraction of data from files, and to generating numerical data at runtime, that can be stored either dynamically or statically, but will need predefined length's array in the latter.
 
-For dynamic extraction, each array is initialized with the **initBLOCK()** function, that is then assigned to a new (t_BLOCK)BLOCK object, and stored at (char\*\*)BLOCK.data; the total amount of chunks of data stored is stored in (size_t)BLOCK.size .
+For dynamic extraction, each array is initialized with the **init_h()** function, that is then assigned to a new (t_block)block object, and stored at (char\*\*)block.data; the total amount of chunks of data stored is stored in (size_t)block.size .
 
-Each BLOCK initialized will be assigned to the HEAP object, and may be completely (or partially) free'd from memory with the **freeBLOCK()** function. 
+Each block initialized will be assigned to the heap object, and may be completely (or partially) free'd from memory with the **free_h()** function. 
 
-The (t_HEAP)HEAP object responsibility is of keeping track of the BLOCKS, by pointing to each of them with the (t_BLOCK\*)HEAP.addr attribute. The maximum amount of BLOCKS that can be created is set to a default 5 at TOTAL_BLOCKS keyword. The (size_t)HEAP.size attribute holds a value that corresponds to the amount of BLOCKs of which that particular HEAP is pointing to.
+The (t_heap)heap object responsibility is of keeping track of the blockS, by pointing to each of them with the (t_block\*)heap.addr attribute. The maximum amount of blockS that can be created is set to a default 5 at TOTAL_blockS keyword. The (size_t)heap.size attribute holds a value that corresponds to the amount of blocks of which that particular heap is pointing to.
 
-The **fileToBLOCK()** function will extract file's data (each chunk of data corresponds to a line of text); and have it assigned to the BLOCK object given to it.
+The **file_to_h()** function will extract file's data (each chunk of data corresponds to a line of text); and have it assigned to the block object given to it.
 ### TO DO
-**initBLOCK()**
-**freeBLOCK()**
-**fileToBLOCK()**
-**numsToHEAP()**
-**numsToSTACK()**
+**init_h()**
+**init_s()**
+**free_h()**
+**file_to_h()**
+**nums_to_h()**
+**nums_to_s()**
 
 ### manipulate_data
 ### TO DO
