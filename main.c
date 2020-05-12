@@ -36,15 +36,15 @@ int main(void)
     size_t i;    
 
     t_heap heap;
-    t_hblock b_name, b_surname, b_psw, b_ID;
+    t_hblock name, surname, psw, id;
 
     assert(locale);
     fprintf(stderr,"Locale is set to %s\n",locale);
     
-    init_h(&b_name, &heap); //init and assign b_name to heap.addr[0]
-    init_h(&b_surname, &heap); //init and assign b_surname to heap.addr[1]
-    init_h(&b_ID, &heap); //init and assign b_ID to heap.addr[2]
-    init_h(&b_psw, &heap); //init and assign b_psw to heap.addr[3]
+    init_h(&name, &heap); //init and assign name to heap.addr[0]
+    init_h(&surname, &heap); //init and assign surname to heap.addr[1]
+    init_h(&id, &heap); //init and assign id to heap.addr[2]
+    init_h(&psw, &heap); //init and assign psw to heap.addr[3]
     
     f_name = fopen("content/nomes.txt", "r"); 
     assert(f_name);
@@ -61,7 +61,7 @@ int main(void)
     file_to_h(f_psw, heap.addr[PSW], DBSIZE);    
     fclose(f_psw);
   
-    nums_to_h(&b_ID, MIN_2, MAX_2, AMT_2, LENGTH_2);
+    nums_to_h(&id, MIN_2, MAX_2, AMT_2, LENGTH_2);
 
     f_out = fopen("data.csv", "w");
     assert(f_out);
