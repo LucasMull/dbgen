@@ -20,7 +20,6 @@ The (t_heap)heap object responsibility is of keeping track of the blockS, by poi
 The **file_to_h()** function will extract file's data (each chunk of data corresponds to a line of text); and have it assigned to the block object given to it.
 ### TO DO
 **init_h()**
-**init_s()**
 **free_h()**
 **file_to_h()**
 **nums_to_h()**
@@ -28,18 +27,18 @@ The **file_to_h()** function will extract file's data (each chunk of data corres
 
 ### manipulate_data
 ### TO DO
-**pickRandom()**
-**pickAtIndex()**
-**stringSwap()**
-**shuffleArray()**
-**initTree()**
-**initNode()**
-**insertNode()**
-**parseStrIntoNode()**
-**xData()**
-**findxData()**
-**printTree()**
-**eraseTree()**
+**pick_random()**
+**pick_index()**
+**str_swap()**
+**shuffle_array()**
+**init_tree()**
+**init_node()**
+**insert_node()**
+**node_vararg()**
+**xdata()**
+**find_xdata()**
+**print_tree()**
+**erase_tree()**
 
 ## IMPORTANT NOTES
 
