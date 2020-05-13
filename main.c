@@ -20,7 +20,7 @@ typedef struct client {
     char *account;
 } t_client;
 
-void getUsers(FILE* f_out, t_hblock *addr[]);
+void get_users(FILE* f_out, t_hblock *addr[]);
 
 int main(void)
 {
@@ -36,15 +36,15 @@ int main(void)
     size_t i;    
 
     t_heap heap;
-    t_hblock b_name, b_surname, b_psw, b_ID;
+    t_hblock name, surname, psw, id;
 
     assert(locale);
     fprintf(stderr,"Locale is set to %s\n",locale);
     
-    init_h(&b_name, &heap); //init and assign b_name to heap.addr[0]
-    init_h(&b_surname, &heap); //init and assign b_surname to heap.addr[1]
-    init_h(&b_ID, &heap); //init and assign b_ID to heap.addr[2]
-    init_h(&b_psw, &heap); //init and assign b_psw to heap.addr[3]
+    init_h(&name, &heap); //init and assign name to heap.addr[0]
+    init_h(&surname, &heap); //init and assign surname to heap.addr[1]
+    init_h(&id, &heap); //init and assign id to heap.addr[2]
+    init_h(&psw, &heap); //init and assign psw to heap.addr[3]
     
     f_name = fopen("content/nomes.txt", "r"); 
     assert(f_name);
@@ -61,11 +61,11 @@ int main(void)
     file_to_h(f_psw, heap.addr[PSW], DBSIZE);    
     fclose(f_psw);
   
-    nums_to_h(&b_ID, MIN_2, MAX_2, AMT_2, LENGTH_2);
+    nums_to_h(&id, MIN_2, MAX_2, AMT_2, LENGTH_2);
 
     f_out = fopen("data.csv", "w");
     assert(f_out);
-    getUsers(f_out, heap.addr); //the brain
+    get_users(f_out, heap.addr); //the brain
     fclose(f_out);
 
     i = 0;
@@ -77,9 +77,9 @@ int main(void)
 }
 
 //requires modularization
-void getUsers(FILE* f_out, t_hblock *addr[])
+void get_users(FILE* f_out, t_hblock *addr[])
 {
-    t_tree T[AMT_3];
+    t_tree tree[AMT_3];
     t_node *new_node = NULL;
     t_client client;
     t_sblock agency[AMT_3][LENGTH_3], account[AMT_4][LENGTH_4];
@@ -95,37 +95,37 @@ void getUsers(FILE* f_out, t_hblock *addr[])
     nums_to_s(MIN_4, MAX_4, AMT_4, LENGTH_4, account);
 
     for ( i = 0 ; i < AMT_3 ; ++i ){ //initialize tree for dependent data
-        initTree(T+i, agency[i]);
+        init_tree(tree+i, agency[i]);
     }
     
-    shuffleArray(addr[ID]);
+    shuffle_array(addr[ID]);
 
     for ( i = 0 ; i < DBSIZE ; ++i ){
         // THIS PICKS CLIENT'S FULLNAME
-        strncpy(client.fullname, pickRandom(addr[NAME]), 15);
+        strncpy(client.fullname, pick_random(addr[NAME]), 15);
         length = strlen(client.fullname);
         strcat(client.fullname, " ");
-        strncat(client.fullname, pickRandom(addr[SURNAME]), 15);
+        strncat(client.fullname, pick_random(addr[SURNAME]), 15);
         if ( (strlen(client.fullname) - length) < 4){ //add another surname
             strcat(client.fullname, " ");
-            strncat(client.fullname, pickRandom(addr[SURNAME]), 15);
+            strncat(client.fullname, pick_random(addr[SURNAME]), 15);
         }
         if ( rand() % 5 == 1 ){
             strcat(client.fullname, " ");
-            strncat(client.fullname, pickRandom(addr[SURNAME]), 15); 
+            strncat(client.fullname, pick_random(addr[SURNAME]), 15); 
         }
 
         // THIS PICKS CLIENT'S ID
-        client.id = pickAtIndex(addr[ID], i);
+        client.id = pick_index(addr[ID], i);
 
         //THIS PICKS CLIENT'S AGENCY AND ACCOUNT (agency is a requisite for account)
         temp_i = rand() % AMT_3;
-        acc = findxData(T+temp_i, AMT_4, LENGTH_4, account);
+        acc = find_xdata(tree+temp_i, AMT_4, LENGTH_4, account);
         assert(acc); //can't find exclusive members to tree
-        psw = pickRandom(addr[PSW]);
+        psw = pick_random(addr[PSW]);
         assert(psw);
 
-        insertNode( T+temp_i, initNode(new_node), "%s %s", acc, psw );
+        insert_node( tree+temp_i, init_node(new_node), "%s %s", acc, psw );
 
         client.agency = agency[temp_i];
         client.account = acc;
@@ -141,14 +141,14 @@ void getUsers(FILE* f_out, t_hblock *addr[])
     system("rm -rf clients; mkdir -p clients");
     for ( i = 0 ;  i < AMT_3 ; ++i ){ //print every tree node
         strcpy(folder,"clients/");
-        strcat(folder, T[i].data);
+        strcat(folder, tree[i].tag);
         f_temp = fopen(folder, "a");
-        printTree(T[i].root, f_temp);
+        print_tree(tree[i].root, f_temp);
         folder[0] = '\0';
         fclose(f_temp);
     }
 
     for ( i = 0 ; i < AMT_3 ; ++i ){ //free every tree node
-        eraseTree(T[i].root, T+i);
+        erase_tree(tree[i].root, tree+i);
     }
 }

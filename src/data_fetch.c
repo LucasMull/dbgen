@@ -42,21 +42,21 @@ void free_h(t_hblock *block, size_t first_i)
 }
 
 //Read file and store each line as a string value of index i in the array
-void file_to_h(FILE* f_read, t_hblock* block, size_t lntotal)
+void file_to_h(FILE* f_read, t_hblock* block, size_t ln_total)
 {
     size_t i;
-    char temp[STRLEN];
+    char ptr_str[STRLEN];
 
-    if (!lntotal){
-        lntotal = INT_MAX;
+    if (!ln_total){
+        ln_total = INT_MAX;
     }
 
     i = 0;
-    while ( (fgets(temp, STRLEN-1, f_read)) && (i < lntotal) ){
+    while ( (fgets(ptr_str, STRLEN-1, f_read)) && (i < ln_total) ){
         block->data = (char**)realloc(block->data, sizeof(char*) * (i + 1));
         assert(block->data);
 
-        block->data[i] = strndup(temp, strlen(temp)-1);
+        block->data[i] = strndup(ptr_str, strlen(ptr_str)-1);
         assert(block->data[i]);
 
         ++i;
@@ -74,7 +74,7 @@ pad = 200 , means it will decrement from 2000 to 1000,
 rand() used in each padding, from a range of last to last+pad makes sure each random number 
     is unique, but also lower than the previous one
 */
-void nums_to_h(t_hblock *block, long int first, long int last, size_t amount, size_t digits)
+void nums_to_h(t_hblock *block, long int first, long int last, size_t amount, size_t length)
 {
     unsigned int pad;
     
@@ -89,15 +89,15 @@ void nums_to_h(t_hblock *block, long int first, long int last, size_t amount, si
 
     last -= pad;
     while ( amount-- > 0 ){
-        block->data[amount] = (char*)malloc(sizeof(char) * digits);
+        block->data[amount] = (char*)malloc(sizeof(char) * length);
         assert(block->data[amount]);
-        snprintf( block->data[amount] , digits-1 , "%ld" , last+(rand()%pad) );
+        snprintf( block->data[amount] , length-1 , "%ld" , last+(rand()%pad) );
 
         last -= pad;
     }
 }
 
-void nums_to_s(long int first, long int last, size_t amount, size_t digits, char STACK[][digits])
+void nums_to_s(long int first, long int last, size_t amount, size_t length, t_sblock block[][length])
 {
     unsigned int pad;
     
@@ -108,7 +108,7 @@ void nums_to_s(long int first, long int last, size_t amount, size_t digits, char
 
     last -= pad;
     while ( amount-- > 0 ){
-        snprintf( STACK[amount] , digits-1 , "%ld" , last+(rand()%pad) );
+        snprintf( block[amount] , length-1 , "%ld" , last+(rand()%pad) );
         last -= pad;
     }
 }
