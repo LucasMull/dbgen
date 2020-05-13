@@ -97,7 +97,11 @@ void nums_to_h(t_hblock *block, long int first, long int last, size_t amount, si
     }
 }
 
+<<<<<<< HEAD
 void nums_to_s(long int first, long int last, size_t amount, size_t length, t_sblock block[][length])
+=======
+void nums_to_s(long int first, long int last, size_t amount, size_t digits, t_sblock block[][digits])
+>>>>>>> 9b07480291894254e98e87299de0b47ad8af5037
 {
     unsigned int pad;
     
@@ -108,7 +112,11 @@ void nums_to_s(long int first, long int last, size_t amount, size_t length, t_sb
 
     last -= pad;
     while ( amount-- > 0 ){
+<<<<<<< HEAD
         snprintf( block[amount] , length-1 , "%ld" , last+(rand()%pad) );
+=======
+        snprintf( block[amount] , digits-1 , "%ld" , last+(rand()%pad) );
+>>>>>>> 9b07480291894254e98e87299de0b47ad8af5037
         last -= pad;
     }
 }
