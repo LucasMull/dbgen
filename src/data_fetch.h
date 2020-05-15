@@ -17,7 +17,7 @@ typedef char t_sblock;
 
 void init_h(t_hblock *block, t_heap *heap);
 
-void free_h(t_hblock *block, size_t first_i);
+int free_h(t_hblock *block, size_t first_i);
 
 void file_to_h(FILE* f_read, t_hblock* block, size_t ln_total);
 

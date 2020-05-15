@@ -10,9 +10,9 @@
 void init_h(t_hblock *block, t_heap *heap)
 {
     static size_t i = 0;
-    size_t temp_i = 0;
-
     assert (i < TOTAL_BLOCKS);
+
+    size_t temp_i = 0;
     while(temp_i < i){ //check if block has already been initialized
         assert( heap->addr[temp_i++] != block );
     }
@@ -26,33 +26,32 @@ void init_h(t_hblock *block, t_heap *heap)
 
 //Free pointers allocated to the particular block
 //EX: first_i = j , means all pointers from index j up to block->size will be free'd
-void free_h(t_hblock *block, size_t first_i)
+int free_h(t_hblock *block, size_t first_i)
 {
-    size_t i, temp_i;
-
-    temp_i = block->size;
-    for ( i = first_i ; i < block->size ; ++i ){
+    size_t temp_i = block->size;
+    for ( size_t i = first_i ; i < block->size ; ++i ){
         free(block->data[i]);
         --temp_i;
     } block->size = temp_i;
     
     if ( block->size == 0 ){
         free(block->data);
+        return 0;
     }
+    return block->size;
 }
 
 //Read file and store each line as a string value of index i in the array
 void file_to_h(FILE* f_read, t_hblock* block, size_t ln_total)
 {
-    size_t i;
-    char ptr_str[STRLEN];
-
     if (!ln_total){
         ln_total = INT_MAX;
     }
 
-    i = 0;
+    char ptr_str[STRLEN];
+    size_t i = 0;
     while ( (fgets(ptr_str, STRLEN-1, f_read)) && (i < ln_total) ){
+
         block->data = (char**)realloc(block->data, sizeof(char*) * (i + 1));
         assert(block->data);
 
@@ -76,17 +75,14 @@ rand() used in each padding, from a range of last to last+pad makes sure each ra
 */
 void nums_to_h(t_hblock *block, long int first, long int last, size_t amount, size_t length)
 {
-    unsigned int pad;
-    
     assert( last >= first );
     assert( (amount > 0) && (amount <= last-first) );
-
-    pad = (last - first) / amount;
 
     block->data = (char**)malloc(sizeof(char*) * amount);
     assert(block->data);
     block->size = amount;
 
+    unsigned int pad = (last - first) / amount;
     last -= pad;
     while ( amount-- > 0 ){
         block->data[amount] = (char*)malloc(sizeof(char) * length);
@@ -99,13 +95,10 @@ void nums_to_h(t_hblock *block, long int first, long int last, size_t amount, si
 
 void nums_to_s(long int first, long int last, size_t amount, size_t length, t_sblock block[][length])
 {
-    unsigned int pad;
-    
     assert( last >= first );
     assert( (amount > 0) && (amount <= last - first) );
 
-    pad = (last - first) / amount;
-
+    unsigned int pad = (last - first) / amount;
     last -= pad;
     while ( amount-- > 0 ){
         snprintf( block[amount] , length-1 , "%ld" , last+(rand()%pad) );

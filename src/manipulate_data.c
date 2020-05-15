@@ -11,12 +11,14 @@ char *pick_random(t_hblock *block){
     return block->data[ rand() % block->size ];
 }
 
-//fetch for DATA at chosen index
+/*
+ * fetch for DATA at chosen index;
+ * can fetch linearly only if DBSIZE 
+ * is smaller or equal to block size 
+ * AND index is smaller or equal to block size
+ */
 char *pick_index(t_hblock *block, size_t i)
 {
-    /* can fetch linearly only if DBSIZE 
-    is smaller or equal to block size 
-    AND index is smaller or equal to block size*/
     assert( (DBSIZE <= block->size) && (i <= block->size) );
     return block->data[i];
 }
@@ -36,9 +38,7 @@ void str_swap(char **str1_ptr, char **str2_ptr)
 //Makes use of stringSwap(), to swap string pointers randomly
 void shuffle_array(t_hblock *block)
 {
-    size_t i;
-
-    for ( i = 0 ; i < block->size ; ++i ) //shuffle
+    for ( size_t i = 0 ; i < block->size ; ++i ) //shuffle
         str_swap( block->data + i , (block->data + (rand() % block->size)) );
 }
 
@@ -70,12 +70,13 @@ t_node *init_node(t_node *new_node)
 //insert node into tree respecting the binary tree format
 t_node *insert_node(t_tree *tree, t_node *node, char *str, ...)
 {
-    t_node *aux1, *aux2 = NULL;
+    t_node *aux1;
+    t_node *aux2 = NULL;
     va_list ap;
     
     //fetch node data
     va_start(ap, str);
-    node_vararg(node, str, ap);
+    vnode_data(node, str, ap);
     va_end(ap);
 
     aux1 = tree->root;
@@ -98,10 +99,8 @@ t_node *insert_node(t_tree *tree, t_node *node, char *str, ...)
     return node;
 }
 
-void node_vararg(t_node *node, char *str, va_list ap){
-    char *ptr;
-    size_t i;
-
+void vnode_data(t_node *node, char *str, va_list ap)
+{
     assert(node->count == 0);
 
     while(*str){
@@ -120,22 +119,21 @@ void node_vararg(t_node *node, char *str, va_list ap){
     node->data = (char**)malloc(sizeof(char*) * node->count);
     assert(node->data);
     
-    i = 0;
+    size_t i = 0;
     while (i < node->count){
-        ptr = va_arg(ap, char*);
+        char *ptr = va_arg(ap, char*);
         node->data[i++] = strndup(ptr, strlen(ptr));
     }
 }
 
 //check if data holds exclusivity amongst tree's nodes
-char *xdata(t_tree *T, char *str)
+char *xdata(t_tree *tree, char *str)
 {
-    t_node *aux;
-    int cmp;
+    t_node *aux = tree->root;
 
-    aux = T->root;
     while (aux != NULL){
-        cmp = strcmp(str, aux->data[0]);
+        int cmp = strcmp(str, aux->data[0]);
+
         if ( cmp == 0 ){
             return NULL;
         } else if ( cmp > 0 ){
@@ -145,43 +143,41 @@ char *xdata(t_tree *T, char *str)
     return str;
 }
 //Search and return an exclusive data in the array not present in any tree's nodes
-char *find_xdata(t_tree *T, size_t amt, size_t length, char s_array[][length])
+char *find_xdata(t_tree *tree, size_t amt, size_t length, t_sblock block[][length])
 {
-    size_t i, temp_i; 
-    size_t incr, limit;
-    char *ptr = NULL;
-    short DONE = 0;
+    size_t i = rand() % amt; 
+    size_t temp_i = i; 
 
-    i = rand() % amt;
-    temp_i = i;
+    size_t direction = 1; 
+    size_t ceiling = amt;
 
-    incr = 1;
-    limit = amt;
+    short loop_count = 0;
     do {
-        while ( i != limit ){
-            if ((ptr = xdata(T, s_array[i])) != NULL){
+        while ( i != ceiling ){
+            char *ptr = xdata(tree, block[i]);
+
+            if ( ptr ){
                 return ptr;
             }
-            i += incr;
-        }
-        i = temp_i;
-        limit = 0;
-        incr = -1;
-    } while (++DONE < 2);
+            i += direction;
+        } i = temp_i;
+
+        ceiling = 0;
+        direction = -1;
+    } while (++loop_count < 2);
     
     return NULL;
 }
 
 void print_tree(t_node *node, FILE *stream){
-    size_t i;
-    char delim;
-
     if ( node ){
         print_tree(node->l, stream);
         print_tree(node->r, stream);
         
-        i = 0;
+        size_t i = 0;
         while( i < node->count ){
+            char delim;
+
             if ( i+1 < node->count ){
                delim = ','; 
             } else delim = '\n';
@@ -194,16 +190,16 @@ void print_tree(t_node *node, FILE *stream){
     }
 }
 
-void erase_tree(t_node *node, t_tree *T){
+void erase_tree(t_node *node, t_tree *tree){
     if ( node ){
-        erase_tree(node->l, T);
-        erase_tree(node->r, T);
+        erase_tree(node->l, tree);
+        erase_tree(node->r, tree);
 
         while(node->count){
             free(node->data[--node->count]);
         } free(node->data);
         free(node);
 
-        --T->size;
+        --tree->size;
     }
 }
