@@ -34,6 +34,7 @@ char *continue_then_init( int(*fn)(int), char *src, short *i);
 
 void print_info(t_info*);
 void init_info(t_info*);
+void clean_info(t_info*);
 
 int main(int argc, char *argv[])
 {
@@ -79,6 +80,7 @@ int main(int argc, char *argv[])
 
     for (short j = 0; j < i; ++j){
         print_info(info+j);
+        clean_info(info+j);
     }
 }
 
@@ -93,6 +95,7 @@ void print_info(t_info* info)
 
 void init_info(t_info* info)
 {
+    info->method = NULL;
     info->lwall = NULL;
     info->rwall = NULL;
     info->amount = NULL;
@@ -100,6 +103,30 @@ void init_info(t_info* info)
     info->delim = '\0';
 
     info->link = NULL;
+}
+
+void clean_info(t_info* info)
+{
+    if(info->method){
+        free(info->method);
+    }
+    if(info->lwall){
+        free(info->lwall);
+    }
+    if(info->rwall){
+        free(info->rwall);
+    }
+    if(info->amount){
+        free(info->amount);
+    }
+    if(info->file){
+        free(info->file);
+    }
+    if(info->link){
+        info->link->link = NULL;
+        clean_info(info->link);
+        free(info->link);
+    }
 }
 
 void def_method(char str[], t_info *info)
@@ -130,20 +157,25 @@ char *continue_then_init( int(*fn)(int), char *src, short *i)
 void def_column(char str[], t_info *info)
 {
     short i = 0;
-    while ((str[i]) && (str[i] != ']')){
+    while ( str[i] != ']' ){
        switch ( str[i] ){
             case '-':
-                info->lwall = strndup(str, i);
+                info->lwall = strndup(str, i); //add check for digit
                 info->rwall = continue_then_init(&isdigit, str, &i); 
                 break;
             case ',':
                 info->amount = continue_then_init(&isdigit, str, &i); 
                 break;
             default:
+                if ( !isgraph(str[i]) ){
+                    _error(ERR_READ,"missing ']' terminator");
+                    exit(EXIT_FAILURE);
+                }
                 ++i;
+                break;
        }
     }
-    if ( info->lwall == NULL ){
+    if ( !info->lwall ){
         info->file = strndup(str, i);
         if ( access( info->file, R_OK ) == -1 ){
             _error(ERR_FILE, info->file);
