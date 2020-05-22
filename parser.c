@@ -117,7 +117,6 @@ void clean_column(t_column* col, int amt_col)
         if((col+i)->link){
             (col+i)->link->link = NULL;
             clean_column((col+i)->link, 1);
-            //free((col+i)->link);
         }
     ++i;
     }
