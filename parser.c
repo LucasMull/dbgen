@@ -3,137 +3,137 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h> //access()
+#include "parser.h"
 
-#define MAX 4
-
-#define _error(A,B) fprintf(stderr, "dbgen: %s%s\n", A, B)
-#define TRUE 0
-#define FALSE 1
-
-#define NIL "\0"
-#define ERR_READ "READ ERROR -- "
-#define ERR_FILE "CANT READ FILE -- "
-#define ERR_LINK "CANT LINK MORE THAN TWO FILES"
-
-typedef struct info {
-    char *method;
-    char *lwall;
-    char *rwall;
-    char *amount;
-    char *file;
-    char delim;
-
-    struct info *link;
-} t_info;
-
-void def_method(char*, t_info*);
-void def_column(char*, t_info*);
-void def_delim(char*, t_info*);
-
-char *continue_then_init( int(*fn)(int), char *src, short *i);
-
-void print_info(t_info*);
-void init_info(t_info*);
-void clean_info(t_info*);
-
-int main(int argc, char *argv[])
+t_column *parser(int argc, char *argv[], int *ret_amt_col)
 {
+    if (argc <= 1){
+        _error(ERR_READ,"no argument given");
+        exit(EXIT_FAILURE);
+    }
+
     // ignore first argument
     --argc;
     ++argv;
-
-    t_info info[argc];
-    for(short i = 0; i < argc; ++i){
-        init_info( info+i );
-    }
+    
+    int amt_col = count_column(argc, argv);
+    t_column *col = malloc(amt_col * sizeof(t_column));
+    init_column( col, amt_col );
 
     short i = 0;
-    t_info *info_ptr;
-    void (*fn)(char*, t_info*);
     while(argc--)
     {
+        t_column *col_ptr;
+        void (*fn)(char*, t_column*);
+
         switch ( **argv ){
             case '-':
-                fn = &def_method;
-                info_ptr = info+i;
+                fn = &def_option;
+                col_ptr = col+i;
                 break;
             case '[':
                 fn = &def_column;
-                info_ptr = info+i;
+                col_ptr = col+i;
                 break;
             case '/':
                 fn = &def_delim;
-                info_ptr = info+(i-1);
+                col_ptr = col+(i-1);
                 break;
             default:
                 _error(ERR_READ, *argv);
                 exit(EXIT_FAILURE);
         }
-        (fn)((*argv)+1, info_ptr);
+        (fn)((*argv)+1, col_ptr);
         
-        if ( info[i].lwall || info[i].file ){
+        if ( col[i].lwall || col[i].file ){
             ++i;
         }
         
         ++argv;
     }
 
-    for (short j = 0; j < i; ++j){
-        print_info(info+j);
-        clean_info(info+j);
+    if ( ret_amt_col != NULL ){
+        *ret_amt_col = amt_col;
     }
+    
+    return col;
 }
 
-void print_info(t_info* info)
+int count_column(int argc, char *argv[])
 {
-    fprintf(stderr, "\nmethod: %s\nfile: %s\nrange: %s-%s\namount: %s\ndelim: %c\nlink: %p\n\n",info->method, info->file, info->lwall, info->rwall, info->amount, info->delim, info->link);
+    int amt_col = 0;
+    while ( argc-- ){
+        if ( **(argv++) == '[' ){ 
+            ++amt_col;
+        }    
+    } 
+    return amt_col;
+}
 
-    if (info->link){
-        fprintf(stderr, "\nmethod: %s\nfile: %s\nrange: %s-%s\namount: %s\ndelim: %c\nlink: %p\n\n",info->link->method, info->link->file, info->link->lwall, info->link->rwall, info->link->amount, info->link->delim, info->link->link);
+void print_column(t_column* col, int amt_col)
+{
+    int i = 0;
+    while ( i < amt_col ){
+        fprintf(stderr, "\noption: %s\nfile: %s\nrange: %s-%s\namount: %s\ndelim: %c\nlink: %p\n\n",(col+i)->option, (col+i)->file, (col+i)->lwall, (col+i)->rwall, (col+i)->amount, (col+i)->delim, (col+i)->link);
+
+        if ((col+i)->link){
+            fprintf(stderr, "\toption: %s\n\tfile: %s\n\trange: %s-%s\n\tamount: %s\n\tdelim: %c\n\tlink: %p\n\n",(col+i)->link->option, (col+i)->link->file, (col+i)->link->lwall, (col+i)->link->rwall, (col+i)->link->amount, (col+i)->link->delim, (col+i)->link->link);
+        }
+    ++i;
     }
 };
 
-void init_info(t_info* info)
+void init_column(t_column* col, int amt_col)
 {
-    info->method = NULL;
-    info->lwall = NULL;
-    info->rwall = NULL;
-    info->amount = NULL;
-    info->file = NULL;
-    info->delim = '\0';
-
-    info->link = NULL;
-}
-
-void clean_info(t_info* info)
-{
-    if(info->method){
-        free(info->method);
-    }
-    if(info->lwall){
-        free(info->lwall);
-    }
-    if(info->rwall){
-        free(info->rwall);
-    }
-    if(info->amount){
-        free(info->amount);
-    }
-    if(info->file){
-        free(info->file);
-    }
-    if(info->link){
-        info->link->link = NULL;
-        clean_info(info->link);
-        free(info->link);
+    int i = 0;
+    while ( i < amt_col ){
+        (col+i)->option[0] = '\0';
+        (col+i)->lwall = NULL;
+        (col+i)->rwall = NULL;
+        (col+i)->amount = NULL;
+        (col+i)->file = NULL;
+        (col+i)->delim = '\0';
+        (col+i)->link = NULL;
+        ++i;
     }
 }
 
-void def_method(char str[], t_info *info)
+void clean_column(t_column* col, int amt_col)
 {
+    int i = 0;
+    while ( i < amt_col ){
+        if((col+i)->lwall){
+            free((col+i)->lwall);
+        }
+        if((col+i)->rwall){
+            free((col+i)->rwall);
+        }
+        if((col+i)->amount){
+            free((col+i)->amount);
+        }
+        if((col+i)->file){
+            free((col+i)->file);
+        }
+        if((col+i)->link){
+            (col+i)->link->link = NULL;
+            clean_column((col+i)->link, 1);
+            //free((col+i)->link);
+        }
+    ++i;
+    }
+    free(col);
+}
+
+void def_option(char str[], t_column *col)
+{
+    if ( strlen(str) > MAX_OPTIONS ){
+        _error(ERR_READ, "too many options");
+        exit(EXIT_FAILURE);
+    }
+
     short i = 0;
-    while ( str[i] ){
-       switch ( str[i++] ){
+    do {
+       switch ( str[i] ){
             case 'r': case 'u':
             case 'f': case 's':
                 break;
@@ -141,33 +141,47 @@ void def_method(char str[], t_info *info)
                 _error(ERR_READ, str+i);
                 exit(EXIT_FAILURE);
        }
-       info->method = strndup(str, i);
-    }
+       ++i;
+    } while ( str[i] );
+
+    strncat(col->option, str, MAX_OPTIONS);
 }
 
 char *continue_then_init( int(*fn)(int), char *src, short *i)
 {
-    short j = (*i)+1;
-    while ( (fn)(src[++(*i)]) )
-        continue;
+    short j = 0;
+    short *ptr_i = i;
+
+    if ( ptr_i ){
+        j = *i;
+    } else {
+        short sub_i = 0;
+        ptr_i = &sub_i;
+    }
     
-    return strndup(src+j, (*i)-j);
+    while ( (fn)(src[(*ptr_i)]) ){
+        ++(*ptr_i);
+    }
+    
+    return strndup(src+j, (*ptr_i)-j);
 }
 
-void def_column(char str[], t_info *info)
+void def_column(char str[], t_column *col)
 {
     short i = 0;
     while ( str[i] != ']' ){
        switch ( str[i] ){
             case '-':
-                info->lwall = strndup(str, i); //add check for digit
-                info->rwall = continue_then_init(&isdigit, str, &i); 
+                col->lwall = continue_then_init(&isdigit, str, NULL);
+                ++i; // skip hyphen
+                col->rwall = continue_then_init(&isdigit, str, &i); 
                 break;
             case ',':
-                info->amount = continue_then_init(&isdigit, str, &i); 
+                ++i; // skip comma
+                col->amount = continue_then_init(&isdigit, str, &i); 
                 break;
             default:
-                if ( !isgraph(str[i]) ){
+                if ( ! isgraph(str[i]) ){
                     _error(ERR_READ,"missing ']' terminator");
                     exit(EXIT_FAILURE);
                 }
@@ -175,29 +189,31 @@ void def_column(char str[], t_info *info)
                 break;
        }
     }
-    if ( !info->lwall ){
-        info->file = strndup(str, i);
-        if ( access( info->file, R_OK ) == -1 ){
-            _error(ERR_FILE, info->file);
+
+    if ( !col->lwall ){ //if no range found than must be a file
+        col->file = strndup(str, i);
+        if ( access( col->file, R_OK ) == -1 ){
+            _error(ERR_FILE, col->file);
             exit(EXIT_FAILURE);
         }
         
     }
-    if ((str[i] == ']') && (str[++i] == '~') && (str[++i] == '[')){
-        if (info->link){
-            _error(ERR_LINK, NIL);
+
+    if ((str[++i] == '~') && (str[++i] == '[')){ //check for linking
+        if (col->link){
+            _error(ERR_LINK, "\0");
             exit(EXIT_FAILURE);
         }
-        info->link = malloc(sizeof(t_info));
-        init_info(info->link);
-        info->link->link = info;
+        col->link = malloc(sizeof(t_column));
+        init_column(col->link, 1);
+        col->link->link = col;
 
-        def_column(str+(++i), info->link);
+        def_column(str+(++i), col->link);
     }
 
 }
 
-void def_delim(char str[], t_info *info)
+void def_delim(char str[], t_column *col)
 {
     if ( strlen(str) != 1 ){
         _error(ERR_READ, str);
@@ -207,7 +223,8 @@ void def_delim(char str[], t_info *info)
     switch (str[0]){
         case 'b': case '\"': case '\'':
         case '|' : case '/' : case ';' :
-            info->delim = str[0];
+        case 't' :
+            col->delim = str[0];
             break;
         default:
             _error(ERR_READ, str);
