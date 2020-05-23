@@ -1,0 +1,1 @@
+-r [content/nomes.txt] /b -r [content/sobrenomes.txt] /t -r -u -s [75000000-99999999] -r [1000-9999,25]~[1000-9999]

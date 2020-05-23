@@ -5,7 +5,7 @@
 #include <unistd.h> //access()
 #include "parser.h"
 
-t_column *parser(int argc, char *argv[], int *ret_amt_col)
+t_colinfo *parser(int argc, char *argv[], int *ret_amt_cols)
 {
     if (argc <= 1){
         _error(ERR_READ,"no argument given");
@@ -16,114 +16,115 @@ t_column *parser(int argc, char *argv[], int *ret_amt_col)
     --argc;
     ++argv;
     
-    int amt_col = count_column(argc, argv);
-    t_column *col = malloc(amt_col * sizeof(t_column));
-    init_column( col, amt_col );
+    int amt_cols = count_colinfo(argc, argv);
+    t_colinfo *info = malloc(amt_cols * sizeof(t_colinfo));
+    init_colinfo( info, amt_cols );
 
     short i = 0;
     while(argc--)
     {
-        t_column *col_ptr;
-        void (*fn)(char*, t_column*);
+        t_colinfo *info_ptr;
+        void (*fn)(char*, t_colinfo*);
 
         switch ( **argv ){
             case '-':
                 fn = &def_option;
-                col_ptr = col+i;
+                info_ptr = info+i;
                 break;
             case '[':
-                fn = &def_column;
-                col_ptr = col+i;
+                fn = &def_colinfo;
+                info_ptr = info+i;
                 break;
             case '/':
                 fn = &def_delim;
-                col_ptr = col+(i-1);
+                info_ptr = info+(i-1);
                 break;
             default:
                 _error(ERR_READ, *argv);
                 exit(EXIT_FAILURE);
         }
-        (fn)((*argv)+1, col_ptr);
+        (fn)((*argv)+1, info_ptr);
         
-        if ( col[i].lwall || col[i].file ){
+        if ( info[i].lwall || info[i].file ){
             ++i;
         }
         
         ++argv;
     }
 
-    if ( ret_amt_col != NULL ){
-        *ret_amt_col = amt_col;
+    if ( ret_amt_cols != NULL ){
+        *ret_amt_cols = amt_cols;
     }
     
-    return col;
+    return info;
 }
 
-int count_column(int argc, char *argv[])
+int count_colinfo(int argc, char *argv[])
 {
-    int amt_col = 0;
+    int amt_cols = 0;
     while ( argc-- ){
-        if ( **(argv++) == '[' ){ 
-            ++amt_col;
+        if ( strchr(*argv,'[') && strchr(*argv,']') ){
+            ++amt_cols;
         }    
+        ++argv;
     } 
-    return amt_col;
+    return amt_cols;
 }
 
-void print_column(t_column* col, int amt_col)
+void print_colinfo(t_colinfo* info, int amt_cols)
 {
     int i = 0;
-    while ( i < amt_col ){
-        fprintf(stderr, "\noption: %s\nfile: %s\nrange: %s-%s\namount: %s\ndelim: %c\nlink: %p\n\n",(col+i)->option, (col+i)->file, (col+i)->lwall, (col+i)->rwall, (col+i)->amount, (col+i)->delim, (col+i)->link);
+    while ( i < amt_cols ){
+        fprintf(stderr, "\noption: %s\nfile: %s\nrange: %s-%s\namount: %s\ndelim: %c\nlink: %p\n\n",(info+i)->option, (info+i)->file, (info+i)->lwall, (info+i)->rwall, (info+i)->amount, (info+i)->delim, (info+i)->link);
 
-        if ((col+i)->link){
-            fprintf(stderr, "\toption: %s\n\tfile: %s\n\trange: %s-%s\n\tamount: %s\n\tdelim: %c\n\tlink: %p\n\n",(col+i)->link->option, (col+i)->link->file, (col+i)->link->lwall, (col+i)->link->rwall, (col+i)->link->amount, (col+i)->link->delim, (col+i)->link->link);
+        if ((info+i)->link){
+            fprintf(stderr, "\toption: %s\n\tfile: %s\n\trange: %s-%s\n\tamount: %s\n\tdelim: %c\n\tlink: %p\n\n",(info+i)->link->option, (info+i)->link->file, (info+i)->link->lwall, (info+i)->link->rwall, (info+i)->link->amount, (info+i)->link->delim, (info+i)->link->link);
         }
     ++i;
     }
 };
 
-void init_column(t_column* col, int amt_col)
+void init_colinfo(t_colinfo* info, int amt_cols)
 {
     int i = 0;
-    while ( i < amt_col ){
-        (col+i)->option[0] = '\0';
-        (col+i)->lwall = NULL;
-        (col+i)->rwall = NULL;
-        (col+i)->amount = NULL;
-        (col+i)->file = NULL;
-        (col+i)->delim = '\0';
-        (col+i)->link = NULL;
+    while ( i < amt_cols ){
+        (info+i)->option[0] = '\0';
+        (info+i)->lwall = NULL;
+        (info+i)->rwall = NULL;
+        (info+i)->amount = NULL;
+        (info+i)->file = NULL;
+        (info+i)->delim = '\0';
+        (info+i)->link = NULL;
         ++i;
     }
 }
 
-void clean_column(t_column* col, int amt_col)
+void clean_colinfo(t_colinfo* info, int amt_cols)
 {
     int i = 0;
-    while ( i < amt_col ){
-        if((col+i)->lwall){
-            free((col+i)->lwall);
+    while ( i < amt_cols ){
+        if((info+i)->lwall){
+            free((info+i)->lwall);
         }
-        if((col+i)->rwall){
-            free((col+i)->rwall);
+        if((info+i)->rwall){
+            free((info+i)->rwall);
         }
-        if((col+i)->amount){
-            free((col+i)->amount);
+        if((info+i)->amount){
+            free((info+i)->amount);
         }
-        if((col+i)->file){
-            free((col+i)->file);
+        if((info+i)->file){
+            free((info+i)->file);
         }
-        if((col+i)->link){
-            (col+i)->link->link = NULL;
-            clean_column((col+i)->link, 1);
+        if((info+i)->link){
+            (info+i)->link->link = NULL;
+            clean_colinfo((info+i)->link, 1);
         }
-    ++i;
+        ++i;
     }
-    free(col);
+    free(info);
 }
 
-void def_option(char str[], t_column *col)
+void def_option(char str[], t_colinfo *info)
 {
     if ( strlen(str) > MAX_OPTIONS ){
         _error(ERR_READ, "too many options");
@@ -143,7 +144,7 @@ void def_option(char str[], t_column *col)
        ++i;
     } while ( str[i] );
 
-    strncat(col->option, str, MAX_OPTIONS);
+    strncat(info->option, str, MAX_OPTIONS);
 }
 
 char *continue_then_init( int(*fn)(int), char *src, short *i)
@@ -165,19 +166,19 @@ char *continue_then_init( int(*fn)(int), char *src, short *i)
     return strndup(src+j, (*ptr_i)-j);
 }
 
-void def_column(char str[], t_column *col)
+void def_colinfo(char str[], t_colinfo *info)
 {
     short i = 0;
     while ( str[i] != ']' ){
        switch ( str[i] ){
             case '-':
-                col->lwall = continue_then_init(&isdigit, str, NULL);
+                info->lwall = continue_then_init(&isdigit, str, NULL);
                 ++i; // skip hyphen
-                col->rwall = continue_then_init(&isdigit, str, &i); 
+                info->rwall = continue_then_init(&isdigit, str, &i); 
                 break;
             case ',':
                 ++i; // skip comma
-                col->amount = continue_then_init(&isdigit, str, &i); 
+                info->amount = continue_then_init(&isdigit, str, &i); 
                 break;
             default:
                 if ( ! isgraph(str[i]) ){
@@ -189,30 +190,30 @@ void def_column(char str[], t_column *col)
        }
     }
 
-    if ( !col->lwall ){ //if no range found than must be a file
-        col->file = strndup(str, i);
-        if ( access( col->file, R_OK ) == -1 ){
-            _error(ERR_FILE, col->file);
+    if ( !info->lwall ){ //if no range found than must be a file
+        info->file = strndup(str, i);
+        if ( access( info->file, R_OK ) == -1 ){
+            _error(ERR_FILE, info->file);
             exit(EXIT_FAILURE);
         }
         
     }
 
     if ((str[++i] == '~') && (str[++i] == '[')){ //check for linking
-        if (col->link){
+        if (info->link){
             _error(ERR_LINK, "\0");
             exit(EXIT_FAILURE);
         }
-        col->link = malloc(sizeof(t_column));
-        init_column(col->link, 1);
-        col->link->link = col;
+        info->link = malloc(sizeof(t_colinfo));
+        init_colinfo(info->link, 1);
+        info->link->link = info;
 
-        def_column(str+(++i), col->link);
+        def_colinfo(str+(++i), info->link);
     }
 
 }
 
-void def_delim(char str[], t_column *col)
+void def_delim(char str[], t_colinfo *info)
 {
     if ( strlen(str) != 1 ){
         _error(ERR_READ, str);
@@ -223,7 +224,7 @@ void def_delim(char str[], t_column *col)
         case 'b': case '\"': case '\'':
         case '|' : case '/' : case ';' :
         case 't' :
-            col->delim = str[0];
+            info->delim = str[0];
             break;
         default:
             _error(ERR_READ, str);

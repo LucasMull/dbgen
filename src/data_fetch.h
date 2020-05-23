@@ -1,26 +1,36 @@
-#ifndef FILE_H
-#define FILE_H
-#include "directives.h"
-#endif
+#include <stdio.h>
+#include "directive.h"
 
-typedef struct hblock {
+typedef struct templ {
+    double value;
+} t_templ;
+
+typedef struct list {
     char **data;
     size_t size;
-} t_hblock;
+} t_list;
 
-typedef struct heap {
-    t_hblock *addr[TOTAL_BLOCKS];
-    size_t size;
-} t_heap;
+typedef struct colgen {
+    char *method;
+    int gentype; //can be either _templ or _list generated
+    union {
+        t_templ *_template;
+        t_list *_list;
+    };
 
-typedef char t_sblock;
+    size_t amount;
+    double lwall;
+    double rwall;
+    //t_tree *link; //if a column has values to be linked
+} t_colgen;
+/*
+void init_list(void *list);
 
-void init_h(t_hblock *block, t_heap *heap);
+int free_list(t_list *list, size_t first_i);
 
-int free_h(t_hblock *block, size_t first_i);
+void init_templ(void *templ);
 
-void file_to_h(FILE* f_read, t_hblock* block, size_t ln_total);
+void file_to_list(FILE* f_read, t_list* list, size_t ln_total);
 
-void nums_to_h(t_hblock *block, long int first, long int last, size_t amount, size_t length);
-
-void nums_to_s(long int first, long int last, size_t amount, size_t length, t_sblock block[][length]);
+void nums_to_list(t_list *list, long int first, long int last, size_t amount, size_t length);
+*/
