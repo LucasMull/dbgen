@@ -24,7 +24,7 @@ void print_colgen(t_colgen*, int);
 
 int main(int argc, char *argv[])
 {
-    int amt_cols;
+    short amt_cols;
 
     t_colinfo *info = parser(argc, argv, &amt_cols);
     t_colgen *colgen = start_colgen(info, amt_cols);
@@ -64,6 +64,8 @@ t_templ *start_templ(t_colinfo* info)
 
     if (info->lwall && info->rwall){
         new_templ->value = strtod(info->rwall,NULL) - strtod(info->lwall, NULL);
+    } else {
+        new_templ->value = 0;
     }
 
     return new_templ;
@@ -101,7 +103,7 @@ int gen_type(t_colinfo *info)
         }
     }
 
-    return TEMPLATE;
+    return TEMPLATE; //otherwise a template will do
 }
 
 t_colgen *start_colgen(t_colinfo *info, int amt_cols)
@@ -130,6 +132,14 @@ t_colgen *start_colgen(t_colinfo *info, int amt_cols)
        
         if ((info+i)->amount){ 
             (new_colgen+i)->amount = atoi((info+i)->amount);
+        } else {
+            (new_colgen+i)->amount = 0;
+        }
+
+        if ((info+i)->delim){
+            (new_colgen+i)->delim = (info+i)->delim;
+        } else {
+            (new_colgen+i)->delim = ',';
         }
         (new_colgen+i)->method = strdup((info+i)->option);
         ++i;        
@@ -158,7 +168,7 @@ void print_colgen(t_colgen *colgen, int amt_cols)
 
     int i = 0;
     while ( i < amt_cols ){
-        fprintf(stderr, "n#: %d\nmethod: %s\namount: %ld\nrange: %f-%f\n", i+1, (colgen+i)->method, (colgen+i)->amount, (colgen+i)->lwall, (colgen+i)->rwall);
+        fprintf(stderr, "n#: %d\nmethod: %s\namount: %ld\nrange: %f-%f\ndelim: %c\n", i+1, (colgen+i)->method, (colgen+i)->amount, (colgen+i)->lwall, (colgen+i)->rwall, (colgen+i)->delim);
         if ((colgen+i)->gentype == TEMPLATE){
             fprintf(stderr,"gentype: template\n");
             print_templ((colgen+i)->_template);

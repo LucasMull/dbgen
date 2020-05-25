@@ -21,6 +21,7 @@ typedef struct colgen {
     size_t amount;
     double lwall;
     double rwall;
+    char delim;
     //t_tree *link; //if a column has values to be linked
 } t_colgen;
 /*

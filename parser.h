@@ -16,16 +16,17 @@ typedef struct colinfo {
     struct colinfo *link;
 } t_colinfo;
 
-t_colinfo *parser(int argc, char *argv[], int *ret_amt_info);
+t_colinfo *parser(int argc, char *argv[], short *ret_amt_info);
 
-int count_colinfo(int, char *[]);
+short count_colinfo(int, char *[]);
 
+void def_link(char*, t_colinfo*);
 void def_option(char*, t_colinfo*);
 void def_colinfo(char*, t_colinfo*);
 void def_delim(char*, t_colinfo*);
 
 char *continue_then_init( int(*)(int), char*, short*);
 
-void print_colinfo(t_colinfo*, int amt_info);
-void init_colinfo(t_colinfo*, int amt_info);
-void clean_colinfo(t_colinfo*, int amt_info);
+void print_colinfo(t_colinfo*, short amt_info);
+void init_colinfo(t_colinfo*, short amt_info);
+void clean_colinfo(t_colinfo*, short amt_info);
