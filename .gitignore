@@ -4,4 +4,5 @@ obj
 run
 multip.c
 *.swp
+README.md
 unused
