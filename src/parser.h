@@ -12,6 +12,7 @@ typedef struct colinfo {
     char *amount;
     char *file;
     char delim;
+    char decimals;
 
     struct colinfo *link;
 } t_colinfo;
@@ -22,7 +23,7 @@ short count_colinfo(int, char *[]);
 
 void def_link(char*, t_colinfo*);
 void def_option(char*, t_colinfo*);
-void def_colinfo(char*, t_colinfo*);
+void def_field(char*, t_colinfo*);
 void def_delim(char*, t_colinfo*);
 
 char *continue_then_init( int(*)(int), char*, short*);

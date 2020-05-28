@@ -3,11 +3,12 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h> //access()
+#include <assert.h>
 #include "parser.h"
 
 enum ops {Option, Field, Delim, Link};
 
-short parse_op(char *argv[], t_colinfo *info)
+static short parse_op(char *argv[], t_colinfo *info)
 {
     //lock makes sure that when consecutive linking, each link is
     //initialized before proceeding any to non-linkable columns
@@ -22,11 +23,11 @@ short parse_op(char *argv[], t_colinfo *info)
         case '-': // Option op
             info_ptr = info;
             fn = &def_option;
-            arg_ptr = (*argv)+1; //skip first char
+            arg_ptr = (*argv)+1; //skips first char
             op_type = Option;
             break;
         case '[': // Field op
-            fn = &def_colinfo;
+            fn = &def_field;
             info_ptr = info;
             arg_ptr = (*argv)+1;
             op_type = Field;
@@ -43,7 +44,7 @@ short parse_op(char *argv[], t_colinfo *info)
             } info_ptr = lock;
 
             fn = &def_link;
-            arg_ptr = *(argv+1); //skip ~
+            arg_ptr = *(argv+1); //skips current line
             op_type = Link;
             break;
         default:
@@ -60,7 +61,7 @@ short parse_op(char *argv[], t_colinfo *info)
     return op_type;
 }
 
-void op_select(int argc, char *argv[], t_colinfo *info)
+static void op_select(int argc, char *argv[], t_colinfo *info)
 {
     short i = 0;
     while(argc--)
@@ -127,40 +128,35 @@ short count_colinfo(int argc, char *argv[])
 
 void print_colinfo(t_colinfo* info, short amt_cols)
 {
-    short i = 0;
-    while ( i < amt_cols ){
-        fprintf(stderr, "\noption: %s\nfile: %s\nrange: %s-%s\namount: %s\ndelim: %c\nlink: %p\n\n",(info+i)->option, (info+i)->file, (info+i)->lwall, (info+i)->rwall, (info+i)->amount, (info+i)->delim, (info+i)->link);
+    for ( short i = 0; i < amt_cols; ++i ){
+        fprintf(stderr, "\noption: %s\nfile: %s\nrange: %s-%s\namount: %s\ndelim: %c\ndecimals: %d\nlink: %p\n\n",(info+i)->option, (info+i)->file, (info+i)->lwall, (info+i)->rwall, (info+i)->amount, (info+i)->delim, (info+i)->decimals, (void*)(info+i)->link);
 
         t_colinfo *ptr_link = (info+i)->link;
         while ( ptr_link ){
-            fprintf(stderr, "\toption: %s\n\tfile: %s\n\trange: %s-%s\n\tamount: %s\n\tdelim: %c\n\tlink: %p\n\n",ptr_link->option, ptr_link->file, ptr_link->lwall, ptr_link->rwall, ptr_link->amount, ptr_link->delim, ptr_link->link);
+            fprintf(stderr, "\toption: %s\n\tfile: %s\n\trange: %s-%s\n\tamount: %s\n\tdelim: %c\n\tdecimals: %d\n\tlink: %p\n\n",ptr_link->option, ptr_link->file, ptr_link->lwall, ptr_link->rwall, ptr_link->amount, ptr_link->delim, ptr_link->decimals, (void*)ptr_link->link);
 
             ptr_link = ptr_link->link;
         }
-    ++i;
     }
-};
+}
 
 void init_colinfo(t_colinfo* info, short amt_cols)
 {
-    short i = 0;
-    while ( i < amt_cols ){
+    for ( short i = 0; i < amt_cols; ++i ){
         (info+i)->option[0] = '\0';
         (info+i)->lwall = NULL;
         (info+i)->rwall = NULL;
         (info+i)->amount = NULL;
         (info+i)->file = NULL;
         (info+i)->delim = '\0';
+        (info+i)->decimals = 0;
         (info+i)->link = NULL;
-
-        ++i;
     }
 }
 
 void clean_colinfo(t_colinfo* info, short amt_cols)
 {
-    short i = 0;
-    while ( i < amt_cols ){
+    for ( short i = 0; i < amt_cols; ++i ){
         if((info+i)->lwall)
             free((info+i)->lwall);
         if((info+i)->rwall)
@@ -171,8 +167,6 @@ void clean_colinfo(t_colinfo* info, short amt_cols)
             free((info+i)->file);
         if((info+i)->link)
             clean_colinfo((info+i)->link, 1);
-
-        ++i;
     }
     free(info);
 }
@@ -213,7 +207,7 @@ void def_option(char str[], t_colinfo *info)
     do {
        switch ( str[i] ){
             case 'r': case 'u':
-            case 'f': case 's':
+            case 's':
                 break;
             default:
                 _error(ERR_READ, str+i);
@@ -237,25 +231,69 @@ char *continue_then_init( int(*fn)(int), char *src, short *i)
         ptr_i = &sub_i;
     }
     
+    short hold_index = *ptr_i;
     while ( (fn)(src[(*ptr_i)]) ){
         ++(*ptr_i);
     }
-    
-    return strndup(src+j, (*ptr_i)-j);
+
+    if ( *ptr_i != hold_index ){
+        char *dest = strndup( src+j, (*ptr_i)-j );
+        return dest;
+    }
+
+    return NULL;
 }
 
-void def_colinfo(char str[], t_colinfo *info)
+static void add_decimals(char str[], t_colinfo *info, short *i)
+{
+    if ( str[*i] == '.' ){
+        ++(*i); //skip dot
+
+        char *leftover = continue_then_init(&isdigit, str, i);
+        info->decimals = strlen( leftover );
+        info->lwall = realloc(info->lwall, info->decimals+(*i));
+
+        if ( leftover ){
+            strcat( info->lwall, "." );
+            strcat( info->lwall, leftover );
+            free(leftover);
+        }
+    }
+}
+
+void def_field(char str[], t_colinfo *info)
 {
     short i = 0;
+    short j;
     while ( str[i] != ']' ){
        switch ( str[i] ){
             case '-':
-                info->lwall = continue_then_init(&isdigit, str, NULL);
+                j = 0;
+                info->lwall = continue_then_init(&isdigit, str, &j);
+                add_decimals(str, info, &j);
+
                 ++i; // skip hyphen
+
                 info->rwall = continue_then_init(&isdigit, str, &i); 
+                if ( str[i] == '.' ){
+                    ++i; //skip dot
+
+                    char *leftover = continue_then_init(&isdigit, str, &i);
+                    if ( info->decimals < strlen(leftover) ){
+                        info->decimals = strlen(leftover);
+                    }
+                    info->rwall = realloc(info->rwall, info->decimals+i);
+
+                    if ( leftover ){
+                        strcat( info->rwall, "." );
+                        strcat( info->rwall, leftover );
+                        free(leftover);
+                    }
+                }
                 break;
             case ',':
                 ++i; // skip comma
+
                 info->amount = continue_then_init(&isdigit, str, &i); 
                 break;
             default:
@@ -269,9 +307,9 @@ void def_colinfo(char str[], t_colinfo *info)
     }
 
     //if no range found then must be a file
-    if ( !info->lwall || !info->rwall){
-        //trim string if a comma is found
-        short trim = i;
+    if ( !info->lwall || !info->rwall ){
+        info->decimals = 0; //resets to default value
+        short trim = i; //trim string if a comma is found
 
         if ( info->amount ){
             trim -= strlen(info->amount)+1;
@@ -282,7 +320,6 @@ void def_colinfo(char str[], t_colinfo *info)
             _error(ERR_FILE, info->file);
             exit(EXIT_FAILURE);
         }
-        
     }
 }
 
