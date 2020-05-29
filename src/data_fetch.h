@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "directive.h"
 
 typedef struct node {
         union {
@@ -13,7 +12,7 @@ typedef struct node {
 typedef struct list {
     union {
         char *svalue;
-        double *dvalue;
+        double dvalue;
     };
 
     t_node **root;
@@ -21,13 +20,13 @@ typedef struct list {
 } t_list;
 
 typedef struct templ {
-    double value;
+    double dvalue;
     //function that will update value according to method
     void (*fn)(struct templ*);
 } t_templ;
 
 typedef struct colgen {
-    char *method;
+    char method;
 
     int gentype; //can be either _templ or _list generated
     union {
@@ -37,12 +36,16 @@ typedef struct colgen {
 
     size_t amt_row;
 
-    struct colgen *_linker;
-
     double lwall;
     double rwall;
 
     char delim;
 
     char decimals;
+
+    struct colgen *_linker;
 } t_colgen;
+
+void gen_scl (t_list**, t_colgen*);
+void nums_to_arrlist(t_list** arrlist, t_colgen* colgen);
+void file_to_arrlist(FILE* f_read, t_list** arrlist, t_colgen* colgen);
