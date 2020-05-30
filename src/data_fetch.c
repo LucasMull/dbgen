@@ -9,8 +9,8 @@ enum gentype {
     Template=1, 
     List=2,
     File=4,
-    TotalGens,
 
+    TotalGens=3,
     Error=-1
 };
 
@@ -18,19 +18,20 @@ enum methodtype {
     Rnd=1, 
     Unq=2, 
     Scl=4, 
-    TotalMethods,
 
+    TotalMethods=3,
     Undef=-1
 };
 
 
 /*
  * Read file and store each line as a string value of index i in the array
+ * Needs rework.
  */
 void file_to_arrlist(FILE* f_read, t_list** arrlist, t_colgen* colgen)
 {
     size_t ln_total = colgen->amt_row; 
-    const short LEN = 25;
+    const int LEN = 50;
 
     char ptr_str[LEN];
     size_t i = 0;
@@ -42,23 +43,36 @@ void file_to_arrlist(FILE* f_read, t_list** arrlist, t_colgen* colgen)
     }
 }
 
-void nums_to_arrlist(t_list** arrlist, t_colgen* colgen)
+void list_swap(t_list** ptr1, t_list** ptr2)
 {
-    if ( colgen->method != Undef ) {
-        if ( colgen->method & Rnd ){
-            gen_scl(arrlist,colgen);
-        }
-        if ( colgen->method & Unq ){
-            gen_scl(arrlist,colgen);
-        }
-        if ( colgen->method & Scl ){
-            gen_scl(arrlist,colgen);
-        }
-    } else { 
-            gen_scl(arrlist,colgen);
+    assert( ptr1 && ptr1 );
+
+    t_list *temp_ptr = *ptr1;
+    *ptr1 = *ptr2;
+    *ptr2 = temp_ptr;
+}
+
+//Makes use of str_swap(), to swap string pointers randomly
+void shuffle_arrlist(t_list **arrlist, t_colgen* colgen)
+{
+    for ( size_t i = 0 ; i < colgen->amt_row ; ++i ){ //shuffle
+        int rnd = rand() % colgen->amt_row;
+        list_swap( arrlist + i, arrlist + rnd );
     }
 }
 
+void nums_to_arrlist(t_list** arrlist, t_colgen* colgen)
+{
+        if ( colgen->method & Scl ){
+            gen_scalable(arrlist,colgen);
+        } else {
+            gen_incremental(arrlist,colgen);
+        }
+
+        if ( colgen->method & Rnd ){
+            shuffle_arrlist(arrlist, colgen);
+        }
+}
 
 /*
  * Stores numbers proportionally to the scope (last - first) provided, by making use of a 'padding' tool
@@ -71,7 +85,7 @@ void nums_to_arrlist(t_list** arrlist, t_colgen* colgen)
  * rand() used in each padding, from a range of last to last+pad makes sure each random number 
  * is unique, but also lower than the previous one
  */
-void gen_scl ( t_list** arrlist, t_colgen* colgen )
+void gen_scalable(t_list** arrlist, t_colgen* colgen)
 {
     double last = colgen->rwall;
     double first = colgen->lwall;
@@ -86,3 +100,25 @@ void gen_scl ( t_list** arrlist, t_colgen* colgen )
     }
 }
 
+void gen_incremental(t_list** arrlist, t_colgen* colgen)
+{
+    double first = colgen->lwall;
+    size_t amount = colgen->amt_row;
+
+    for ( size_t i = 0; i < amount; ++i ){ 
+        arrlist[i]->dvalue = first + i;
+    }
+}
+
+/* might use for template
+void gen_random(t_list** arrlist, t_colgen* colgen)
+{
+    double first = colgen->lwall;
+    double last = colgen->rwall;
+    size_t amount = colgen->amt_row;
+
+    for ( size_t i = 0; i < amount; ++i ){ 
+        arrlist[i]->dvalue = first + (rand() % (size_t)(last - first));
+    }
+}
+*/

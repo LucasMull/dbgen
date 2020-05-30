@@ -46,6 +46,9 @@ typedef struct colgen {
     struct colgen *_linker;
 } t_colgen;
 
-void gen_scl (t_list**, t_colgen*);
+void gen_scalable(t_list**, t_colgen*);
+void gen_incremental(t_list**, t_colgen*);
+//void gen_random(t_list**, t_colgen*);
+
 void nums_to_arrlist(t_list** arrlist, t_colgen* colgen);
 void file_to_arrlist(FILE* f_read, t_list** arrlist, t_colgen* colgen);
