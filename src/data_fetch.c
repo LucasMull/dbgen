@@ -6,22 +6,18 @@
 #include "data_fetch.h"
 
 enum gentype {
-    Template, 
-    List,
-    FileTemplate,
-    FileList, 
+    Template=1, 
+    List=2,
+    File=4,
+    TotalGens,
 
     Error=-1
 };
 
 enum methodtype { 
-    Rnd=2, 
-    Unq=3, 
-    Scl=5, 
-    RndUnq=6, 
-    RndScl=10, 
-    UnqScl=15, 
-    RndUnqScl=30,
+    Rnd=1, 
+    Unq=2, 
+    Scl=4, 
     TotalMethods,
 
     Undef=-1
@@ -48,27 +44,18 @@ void file_to_arrlist(FILE* f_read, t_list** arrlist, t_colgen* colgen)
 
 void nums_to_arrlist(t_list** arrlist, t_colgen* colgen)
 {
-    switch ( colgen->method ){
-        case Rnd :
+    if ( colgen->method != Undef ) {
+        if ( colgen->method & Rnd ){
             gen_scl(arrlist,colgen);
-            break;
-        case Unq :
+        }
+        if ( colgen->method & Unq ){
             gen_scl(arrlist,colgen);
-            break;
-        case Scl :
-            break;
-        case RndUnq :
+        }
+        if ( colgen->method & Scl ){
             gen_scl(arrlist,colgen);
-            break;
-        case UnqScl :
+        }
+    } else { 
             gen_scl(arrlist,colgen);
-            break;
-        case RndUnqScl :
-            gen_scl(arrlist,colgen);
-            break;
-        case Undef :
-            gen_scl(arrlist,colgen);
-            break;
     }
 }
 

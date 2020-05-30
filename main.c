@@ -8,28 +8,22 @@
 #define DEFAULT_DBSIZE 10
 
 enum gentype {
-    Template, 
-    List,
-    FileTemplate,
-    FileList, 
+    Template=1, 
+    List=2,
+    File=4,
+    TotalGens,
 
     Error=-1
 };
 
 enum methodtype { 
-    Rnd=2, 
-    Unq=3, 
-    Scl=5, 
-    RndUnq=6, 
-    RndScl=10, 
-    UnqScl=15, 
-    RndUnqScl=30,
+    Rnd=1, 
+    Unq=2, 
+    Scl=4, 
     TotalMethods,
 
     Undef=-1
 };
-
-static int methods[TotalMethods] = {Rnd, Unq, Scl, RndUnq, RndScl, UnqScl, RndUnqScl};
 
 t_list *init_list();
 void start_arrlist(t_colgen*);
@@ -106,7 +100,7 @@ void destroy_list(t_list* list, short gentype)
 {
     assert(list);
 
-    if ( gentype == FileList && list->svalue )
+    if (( gentype == ( File | List ) ) && ( list->svalue ))
         free(list->svalue);
     //implement free traversing tree
     if ( list->root )
@@ -134,8 +128,9 @@ void start_templ(t_colgen* colgen, t_templ* templ)
 
     templ->dvalue = colgen->rwall - colgen->lwall;
     
+    enum methodtype methods = Rnd;
     for ( short i = 0; i < TotalMethods; ++i ){
-        if ( colgen->method == methods[i] ){
+        if ( colgen->method & ( methods << i ) ){
             //templ->fn = templ_fns[i];
             break;
         }
@@ -155,36 +150,29 @@ void gen_type(t_colinfo *info, t_colgen *colgen)
     assert(info);
     assert(colgen);
 
-    int cmmd = 0; //common denominator
-    short new_method = 1;
-    char letter[3] = {'r','u','s'};
+    char letter[3] = {'r','u','s'}; //this needs to be made global
 
-    for ( short i = 0; i < 3; ++i ){
+    short new_method = 0;
+    enum methodtype methods = Rnd;
+    for ( short i = 0; i < TotalMethods; ++i ){
         if ( strchr(info->option, letter[i]) ){
-            cmmd += methods[i];
-            new_method *= methods[i];
-        }
-    }
-    for ( short i = 0; i < 7; ++i ){
-        if ( new_method == methods[i] ){
-            colgen->method = methods[i];
-            break;
+            new_method |= ( methods << i ) ;
         }
     }
     
     colgen->gentype = Template;
-    if ( !(cmmd % 2) ){ //if cmmd is random
-        if ( !(cmmd % 3) || !(cmmd % 5) ){ //and also unique or scalable
+    if ( new_method & Rnd ){ //if cmmd is random
+        if ( new_method & ( Unq | Scl ) ){ //and also unique or scalable
             colgen->gentype = List; //then it must be a list
         }
-    }
+    } colgen->method = new_method;
 
     if ( info->file ){
         if ( colgen->gentype == List ){
-            colgen->gentype = FileList;
+            colgen->gentype = File | List;
         } 
         else if ( colgen->gentype == Template){
-            colgen->gentype = FileTemplate;
+            colgen->gentype = File | Template;
         }
     }
 }
@@ -233,10 +221,10 @@ t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen)
 
     gen_type(info, colgen);
     short gentype = colgen->gentype;
-    if ( gentype == List || gentype == FileList ){
+    if ( gentype & List ){
         start_arrlist(colgen); 
     }
-    else if ( gentype == Template || gentype == FileTemplate ){
+    else if ( gentype & Template ){
         start_templ(colgen, init_templ());
     }
     
@@ -257,7 +245,7 @@ void start_arrlist(t_colgen *colgen)
     if ( colgen->gentype == List ){
         nums_to_arrlist(new_arrlist, colgen);
     }
-    else if ( colgen->gentype == FileList ){
+    else if ( colgen->gentype == ( File | List ) ){
         FILE *f_read = fopen("content/nomes.txt", "r");
         file_to_arrlist(f_read, new_arrlist, colgen);
         fclose(f_read);
@@ -306,7 +294,7 @@ void print_list(size_t amt_rows, t_list **list, short gentype)
     assert(list);
     
     for ( int i = 0; i < amt_rows; ++i ){
-        if (( gentype == FileList ) && ( list[i]->svalue )){
+        if (( gentype == ( File | List )) && ( list[i]->svalue )){
             fprintf(stderr, "\t# %s\n", list[i]->svalue);
         }
         else if ( gentype == List ){
@@ -332,27 +320,25 @@ void print_arrcolgen(t_colgen **colgen, int amt_cols)
 
     for ( int i = 0; i < amt_cols; ++i ){
         fprintf(stderr, "n#: %d\nmethod: %d\namt_row: %ld\nrange: %f-%f\ndelim: %c\ndecimals: %d\nlinker: %p\n", i+1, colgen[i]->method, colgen[i]->amt_row, colgen[i]->lwall, colgen[i]->rwall, colgen[i]->delim, colgen[i]->decimals, (void*)colgen[i]->_linker);
-
-        switch ( colgen[i]->gentype ){
-            case Template :
-                fprintf(stderr,"gentype: template\n");
-                print_templ(colgen[i]->_template);
-                break;
-            case FileTemplate :
-                fprintf(stderr,"gentype: file_template\n");
-                print_templ(colgen[i]->_template);
-                break;
-            case List :
-                fprintf(stderr, "gentype: list\n");
-                print_list( colgen[i]->amt_row, colgen[i]->_list, colgen[i]->gentype );
-                break;
-            case FileList :
-                fprintf(stderr, "gentype: file_list\n");
-                print_list( colgen[i]->amt_row, colgen[i]->_list, colgen[i]->gentype );
-                break;
-            default :
-                _error(ERR_READ, "Nil gentype");
-                exit(EXIT_FAILURE);
+        
+        if ( colgen[i]->gentype == Template){
+            fprintf(stderr,"gentype: template\n");
+            print_templ(colgen[i]->_template);
+        } 
+        else if (colgen[i]->gentype == ( File | Template )){
+            fprintf(stderr,"gentype: file_template\n");
+            print_templ(colgen[i]->_template);
+        }
+        else if ( colgen[i]->gentype == List ){
+            fprintf(stderr, "gentype: list\n");
+            print_list( colgen[i]->amt_row, colgen[i]->_list, colgen[i]->gentype );
+        }
+        else if ( colgen[i]->gentype == ( File | List )){
+            fprintf(stderr, "gentype: file_list\n");
+            print_list( colgen[i]->amt_row, colgen[i]->_list, colgen[i]->gentype );
+        } else {
+            _error(ERR_READ, "Nil gentype");
+            exit(EXIT_FAILURE);
         }
     }
 }
@@ -360,10 +346,10 @@ void print_arrcolgen(t_colgen **colgen, int amt_cols)
 void destroy_colgen(t_colgen *colgen)
 {
     short gentype = colgen->gentype;
-    if ( gentype == Template || gentype == FileTemplate ){
+    if ( gentype == Template || gentype == ( File | Template ) ){
         destroy_templ(colgen->_template);
     }
-    else if ( gentype == List || gentype == FileList ){
+    else if ( gentype == List || gentype == ( File | List ) ){
         destroy_arrlist(colgen->gentype, colgen->_list, colgen->amt_row);
     }
     
