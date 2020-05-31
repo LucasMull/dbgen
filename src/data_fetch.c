@@ -11,7 +11,6 @@ enum gentype {
     File=4,
 
     TotalGens=3,
-    Error=-1
 };
 
 enum methodtype { 
@@ -20,7 +19,7 @@ enum methodtype {
     Scl=4, 
 
     TotalMethods=3,
-    Undef=-1
+    Undef=0
 };
 
 
@@ -61,18 +60,57 @@ void shuffle_arrlist(t_list **arrlist, t_colgen* colgen)
     }
 }
 
-void nums_to_arrlist(t_list** arrlist, t_colgen* colgen)
+void set_scalable(void* this)
 {
-        if ( colgen->method & Scl ){
-            gen_scalable(arrlist,colgen);
-        } else {
-            gen_incremental(arrlist,colgen);
-        }
+    t_colgen* colgen = (t_colgen*)this;
 
-        if ( colgen->method & Rnd ){
-            shuffle_arrlist(arrlist, colgen);
-        }
+    double first = colgen->lwall;
+    double last = colgen->rwall;
+    size_t amount = colgen->amt_row;
+
+    if ( colgen->_template->dvalue < last ){
+        unsigned int pad = (last - first) / amount;
+        colgen->_template->dvalue +=  rand() % pad;
+    } else {
+        colgen->_template->dvalue = last;
+    }
 }
+
+void set_incremental(void* this)
+{
+    t_colgen* colgen = (t_colgen*)this;
+    double last = colgen->rwall;
+
+    if ( colgen->_template->dvalue < last ){
+        ++colgen->_template->dvalue;
+    }
+}
+
+void set_random(void* this)
+{
+    t_colgen* colgen = (t_colgen*)this;
+    double first = colgen->lwall;
+    double last = colgen->rwall;
+    
+    size_t rnd = rand() % (size_t)(last - first);
+    colgen->_template->dvalue = first + rnd; 
+}
+
+void numsetter_templ(t_templ* templ, t_colgen* colgen)
+{
+    if ( colgen->method & Rnd )
+        templ->fn = &set_random;
+    else if ( colgen->method & Scl )
+        templ->fn = &set_scalable;
+    else
+        templ->fn = &set_incremental;
+}
+/*
+void filesetter_templ(t_templ* templ, t_colgen* colgen)
+{
+
+}
+*/
 
 /*
  * Stores numbers proportionally to the scope (last - first) provided, by making use of a 'padding' tool
@@ -105,20 +143,18 @@ void gen_incremental(t_list** arrlist, t_colgen* colgen)
     double first = colgen->lwall;
     size_t amount = colgen->amt_row;
 
-    for ( size_t i = 0; i < amount; ++i ){ 
+    for ( size_t i = 0; i < amount; ++i )
         arrlist[i]->dvalue = first + i;
-    }
 }
 
-/* might use for template
-void gen_random(t_list** arrlist, t_colgen* colgen)
+void nums_to_arrlist(t_list** arrlist, t_colgen* colgen)
 {
-    double first = colgen->lwall;
-    double last = colgen->rwall;
-    size_t amount = colgen->amt_row;
+        if ( colgen->method & Scl ){
+            gen_scalable(arrlist,colgen);
+        } else {
+            gen_incremental(arrlist,colgen);
+        }
 
-    for ( size_t i = 0; i < amount; ++i ){ 
-        arrlist[i]->dvalue = first + (rand() % (size_t)(last - first));
-    }
+        if ( colgen->method & Rnd )
+            shuffle_arrlist(arrlist, colgen);
 }
-*/

@@ -22,7 +22,7 @@ typedef struct list {
 typedef struct templ {
     double dvalue;
     //function that will update value according to method
-    void (*fn)(struct templ*);
+    void (*fn)(void*);
 } t_templ;
 
 typedef struct colgen {
@@ -46,9 +46,7 @@ typedef struct colgen {
     struct colgen *_linker;
 } t_colgen;
 
-void gen_scalable(t_list**, t_colgen*);
-void gen_incremental(t_list**, t_colgen*);
-//void gen_random(t_list**, t_colgen*);
+void numsetter_templ(t_templ*, t_colgen*);
 
 void nums_to_arrlist(t_list** arrlist, t_colgen* colgen);
 void file_to_arrlist(FILE* f_read, t_list** arrlist, t_colgen* colgen);
