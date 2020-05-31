@@ -13,7 +13,6 @@ enum gentype {
     File=4,
 
     TotalGens=3,
-    Error=-1
 };
 
 enum methodtype { 
@@ -22,7 +21,7 @@ enum methodtype {
     Scl=4, 
 
     TotalMethods=3,
-    Undef=-1
+    Undef=0
 };
 
 t_list *init_list();
@@ -63,13 +62,13 @@ int main(int argc, char *argv[])
         }
     }
 
-    t_colgen **colgen = start_arrcolgen(info, amt_cols+amt_link);
+    t_colgen **arrcolgen = start_arrcolgen(info, amt_cols+amt_link);
 
     print_colinfo(info,amt_cols);
     clean_colinfo(info,amt_cols);
     
-    print_arrcolgen(colgen, amt_cols+amt_link);
-    destroy_arrcolgen(colgen, amt_cols+amt_link);    
+    print_arrcolgen(arrcolgen, amt_cols+amt_link);
+    destroy_arrcolgen(arrcolgen, amt_cols+amt_link);    
     return 0;
 }
 
@@ -79,12 +78,34 @@ t_list *init_list()
     assert(new_list);
 
     new_list->svalue = NULL;
-
     new_list->root = NULL;
-
     new_list->tree_size = 0;
 
     return new_list;
+}
+
+void start_arrlist(t_colgen *colgen)
+{
+    assert(!colgen->_list);
+    assert(colgen->amt_row);
+
+    t_list **new_arrlist = malloc(colgen->amt_row * sizeof(t_list*));
+    assert(new_arrlist);
+
+    for ( int i = 0; i < colgen->amt_row; ++i )
+        new_arrlist[i] = init_list();
+    
+    if ( colgen->gentype & List ){
+        if ( colgen->gentype & File ){
+            FILE *f_read = fopen("content/nomes.txt", "r");
+            file_to_arrlist(f_read, new_arrlist, colgen);
+            fclose(f_read);
+        } else { // normal list
+            nums_to_arrlist(new_arrlist, colgen);
+        }
+    }
+
+    colgen->_list = new_arrlist;
 }
 
 void destroy_arrlist(short gentype, t_list** list, int amt_row)
@@ -100,12 +121,11 @@ void destroy_list(t_list* list, short gentype)
 {
     assert(list);
 
-    if (( list->svalue ) && ( gentype == ( File | List ) ))
+    if (( gentype == ( File | List ) ) && ( list->svalue ))
         free(list->svalue);
-    //implement free traversing tree
     if ( list->root )
         free(list->root);
-     free(list);
+    free(list);
 }
 
 
@@ -120,23 +140,23 @@ t_templ *init_templ()
     return new_templ;
 }
 
-void start_templ(t_colgen* colgen, t_templ* templ)
+void start_templ(t_colgen* colgen, t_templ* new_templ)
 {
     assert(colgen);
-    assert(templ);
+    assert(new_templ);
     assert(!colgen->_template);
 
-    templ->dvalue = colgen->rwall - colgen->lwall;
+    new_templ->dvalue = colgen->rwall - colgen->lwall;
     
-    enum methodtype methods = Rnd;
-    for ( short i = 0; i < TotalMethods; ++i ){
-        if ( colgen->method & ( methods << i ) ){
-            //templ->fn = templ_fns[i];
-            break;
+    if (colgen->gentype & Template){
+        if (colgen->gentype & File){
+            //filesetter_templ(new_templ, colgen);
+        } else {
+            numsetter_templ(new_templ, colgen);
         }
     }
     
-    colgen->_template = templ;
+    colgen->_template = new_templ;
 }
 
 void destroy_templ(t_templ *templ)
@@ -152,9 +172,10 @@ void def_typeof(t_colinfo *info, t_colgen *colgen)
 
     char letter[3] = {'r','u','s'}; //this needs to be made global
 
-    short new_method = 0;
-    enum methodtype methods = Rnd;
+    short new_method = Undef;
+    short new_gentype = Undef;
 
+    enum methodtype methods = Rnd;
     for ( short i = 0; i < TotalMethods; ++i ){
         if ( strchr(info->option, letter[i]) ){
             new_method |= ( methods << i );
@@ -163,27 +184,28 @@ void def_typeof(t_colinfo *info, t_colgen *colgen)
     
     //if new_method is random and also unique or scalable
     if (( new_method & Rnd ) && ( new_method & ( Unq | Scl ) )){ 
-        colgen->gentype = List; //then it must be a list
+        new_gentype = List; //then it must be a list
     } else {
-        colgen->gentype = Template; //otherwise it's a template
-    } colgen->method = new_method;
+        new_gentype = Template; //otherwise it's a template
+    }
 
     if ( info->file ){
-        if ( colgen->method & Rnd ){
-            colgen->gentype = File | List;
+        if ( new_method & Rnd ){
+            new_gentype = List;
         } 
-        else {
-            colgen->gentype = File | Template;
-        }
+        new_gentype |= File;
     }
+
+    colgen->method = new_method;
+    colgen->gentype = new_gentype;
 }
 
 t_colgen *init_colgen()
 {
     t_colgen *new_colgen = malloc(sizeof(t_colgen));
 
-    new_colgen->method = Undef; //-1
-    new_colgen->gentype = Error; //-1
+    new_colgen->method = Undef;
+    new_colgen->gentype = Undef;
     new_colgen->_list = NULL;
     new_colgen->amt_row = DEFAULT_DBSIZE; 
     new_colgen->lwall = 0.0;
@@ -197,62 +219,28 @@ t_colgen *init_colgen()
 
 t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen)
 {
-    if ( info->lwall ){
+    if ( info->lwall )
         colgen->lwall = strtod(info->lwall, NULL);
-    }
-
-    if ( info->rwall ){
+    if ( info->rwall )
         colgen->rwall = strtod(info->rwall, NULL);
-    }
-
-    if (( info->amount ) && ( atoi(info->amount) < DEFAULT_DBSIZE )){ 
-        colgen->amt_row = atoi(info->amount);
-    } 
-    else if (( colgen->rwall - colgen->lwall ) < DEFAULT_DBSIZE ){
-        colgen->amt_row = colgen->rwall - colgen->lwall;
-    }
-
-    if ( info->delim != '\0' ){ // if specified delim in info
-        colgen->delim = info->delim; // col will input such delim
-    }
-
-    if ( info->decimals > 0){
+    if ( info->delim )
+        colgen->delim = info->delim;
+    if ( info->decimals )
         colgen->decimals = info->decimals;
-    }
+
+    if (( info->amount ) && ( atoi(info->amount) < DEFAULT_DBSIZE ))
+        colgen->amt_row = atoi(info->amount);
+    else if (( colgen->rwall - colgen->lwall ) < DEFAULT_DBSIZE )
+        colgen->amt_row = colgen->rwall - colgen->lwall;
+
 
     def_typeof(info, colgen);
-    short gentype = colgen->gentype;
-    if ( gentype & List ){
+    if ( colgen->gentype & List )
         start_arrlist(colgen); 
-    }
-    else if ( gentype & Template ){
+    else if ( colgen->gentype & Template )
         start_templ(colgen, init_templ());
-    }
     
     return colgen;
-}
-
-void start_arrlist(t_colgen *colgen)
-{
-    assert(!colgen->_list);
-    assert(colgen->amt_row);
-
-    t_list **new_arrlist = malloc(colgen->amt_row * sizeof(t_list*));
-    assert(new_arrlist);
-
-    for ( int i = 0; i < colgen->amt_row; ++i ){
-        new_arrlist[i] = init_list();
-    }
-    if ( colgen->gentype == List ){
-        nums_to_arrlist(new_arrlist, colgen);
-    }
-    else if ( colgen->gentype == ( File | List ) ){
-        FILE *f_read = fopen("content/nomes.txt", "r");
-        file_to_arrlist(f_read, new_arrlist, colgen);
-        fclose(f_read);
-    }
-
-    colgen->_list = new_arrlist;
 }
 
 t_colgen **start_arrcolgen(t_colinfo *info, int amt_cols)
@@ -262,29 +250,27 @@ t_colgen **start_arrcolgen(t_colinfo *info, int amt_cols)
     t_colgen **new_arrcolgen = malloc(amt_cols * sizeof(t_colgen*));
     assert(new_arrcolgen);
 
-    int j = 0; //iterate through colgen index
+    int j = 0; //iterate through, and add to, colgen index
     int i = 0; //iterate through colinfo index
-    while ( j < (amt_cols) ){
+    while ( j < amt_cols ){
         new_arrcolgen[j] = start_colgen(info+i, init_colgen()); 
 
         if ( (info+i)->link ){
             int linker_index = j; //hold onto the linker index
             t_colinfo *ptr_link = (info+i)->link;
             while ( ptr_link ){
-                ++j; 
+                ++j;
                 new_arrcolgen[j] = start_colgen(ptr_link, init_colgen());
                 new_arrcolgen[j]->_linker = new_arrcolgen[linker_index];
 
                 ptr_link = ptr_link->link;
             }
-        } else {
-            new_arrcolgen[j]->_linker = NULL;
         }
         
+        ++j;
         if ( i < amt_cols ){
             ++i;        
         }
-        ++j;
     }
 
     return new_arrcolgen;
@@ -298,12 +284,13 @@ void print_list(size_t amt_rows, t_list **list, short gentype)
         if ( gentype == List ){
             fprintf(stderr, "\t# %f\n", list[i]->dvalue);
         }
-        else if (( list[i]->svalue ) && ( gentype == ( File | List ) )){
+        else if (( gentype == ( File | List ) ) && ( list[i]->svalue )){
             fprintf(stderr, "\t# %s\n", list[i]->svalue);
         }
 
         if ( list[i]->tree_size ){
-            fprintf(stderr, "\t#%d tree_size: %ld", i+1, list[i]->tree_size);
+            fprintf(stderr, "\t#%d tree_size: %ld", i+1,
+                                                    list[i]->tree_size);
         }
     } fputc('\n', stderr);
 }
@@ -337,9 +324,6 @@ void print_arrcolgen(t_colgen **colgen, int amt_cols)
                 fprintf(stderr, "gentype: list\n");
             }
             print_list( colgen[i]->amt_row, colgen[i]->_list, colgen[i]->gentype );
-        } else {
-            _error(ERR_READ, "Nil gentype");
-            exit(EXIT_FAILURE);
         }
     }
 }
@@ -360,7 +344,7 @@ void destroy_arrcolgen(t_colgen **arrcolgen, int amt_cols)
 {
     assert(arrcolgen);
 
-    for ( int i = 0; i < amt_cols; ++i ){
+    for ( int i = 0; i < amt_cols; ++i )
         destroy_colgen(arrcolgen[i]);
-    } free (arrcolgen);
+    free (arrcolgen);
 }
