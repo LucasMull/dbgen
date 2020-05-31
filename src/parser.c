@@ -6,7 +6,12 @@
 #include <assert.h>
 #include "parser.h"
 
-enum ops {Option, Field, Delim, Link};
+enum optype {
+    Option=1, 
+    Field=2, 
+    Delim=4, 
+    Link=8
+};
 
 static short parse_op(char *argv[], t_colinfo *info)
 {
@@ -39,9 +44,9 @@ static short parse_op(char *argv[], t_colinfo *info)
             op_type = Delim;
             break;
         case '~': // Link op
-            if ( !lock ){
-                lock = info-1;
-            } info_ptr = lock;
+            if ( !lock ){ //if lock is inactive
+                lock = info-1; //points lock to linker's index
+            } info_ptr = lock; //points to active linker
 
             fn = &def_link;
             arg_ptr = *(argv+1); //skips current line
@@ -54,7 +59,7 @@ static short parse_op(char *argv[], t_colinfo *info)
     (fn)(arg_ptr, info_ptr);
     
     // resets lock if previous operation didn't involve linking
-    if (( lock ) && ( lock != info_ptr )){
+    if (( lock != info_ptr ) && ( lock )){
         lock = NULL;
     }
 
@@ -99,9 +104,9 @@ t_colinfo *parser(int argc, char *argv[], short *ret_amt_cols)
     }
 
     short amt_cols = count_colinfo(argc, argv);
-
     t_colinfo *info = malloc(amt_cols * sizeof(t_colinfo));
-    init_colinfo( info, amt_cols );
+
+    init_colinfo(info, amt_cols);
     op_select(argc, argv, info);
 
     if ( ret_amt_cols ){
@@ -115,10 +120,10 @@ short count_colinfo(int argc, char *argv[])
 {
     short amt_cols = 0;
     while ( argc-- ){
-        if ( strchr(*argv,'[') && strchr(*argv,']') ){
+        if (strchr(*argv,'[') && strchr(*argv,']')){
             ++amt_cols;
         }    
-        if (( **argv == '~' ) && ( strlen(*argv) == 1 )){
+        else if (( **argv == '~' ) && ( strlen(*argv) == 1 )){
             --amt_cols;
         }
         ++argv;
@@ -326,7 +331,7 @@ void def_field(char str[], t_colinfo *info)
 void def_delim(char str[], t_colinfo *info)
 {
     if ( strlen(str) != 1 ){
-        _error(ERR_READ, str);
+        _error(ERR_READ, "invalid delim");
         exit(EXIT_FAILURE);
     }
 
