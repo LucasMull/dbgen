@@ -1,9 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <limits.h>
-#include "data_fetch.h"
+#include "../config.h"
+#include "../dbgen.h"
 
 enum gentype {
     Template=1, 
@@ -25,10 +21,12 @@ enum methodtype {
 
 /*
  * Read file and store each line as a string value of index i in the array
- * Needs rework.
  */
-void file_to_arrlist(FILE* f_read, t_list** arrlist, t_colgen* colgen)
+void file_to_arrlist(t_list** arrlist, t_colgen* colgen)
 {
+    FILE *f_read = fopen(colgen->file, "r");
+    assert(f_read);
+
     size_t ln_total = colgen->amt_row; 
     const int LEN = 50;
 
@@ -40,6 +38,7 @@ void file_to_arrlist(FILE* f_read, t_list** arrlist, t_colgen* colgen)
 
         ++i;
     }
+    fclose(f_read);
 }
 
 void list_swap(t_list** ptr1, t_list** ptr2)
@@ -60,10 +59,8 @@ void shuffle_arrlist(t_list **arrlist, t_colgen* colgen)
     }
 }
 
-void set_scalable(void* this)
+void set_scalable(t_colgen* colgen)
 {
-    t_colgen* colgen = (t_colgen*)this;
-
     double first = colgen->lwall;
     double last = colgen->rwall;
     size_t amount = colgen->amt_row;
@@ -76,9 +73,8 @@ void set_scalable(void* this)
     }
 }
 
-void set_incremental(void* this)
+void set_incremental(t_colgen* colgen)
 {
-    t_colgen* colgen = (t_colgen*)this;
     double last = colgen->rwall;
 
     if ( colgen->_template->dvalue < last ){
@@ -86,9 +82,8 @@ void set_incremental(void* this)
     }
 }
 
-void set_random(void* this)
+void set_random(t_colgen* colgen)
 {
-    t_colgen* colgen = (t_colgen*)this;
     double first = colgen->lwall;
     double last = colgen->rwall;
     
@@ -96,14 +91,14 @@ void set_random(void* this)
     colgen->_template->dvalue = first + rnd; 
 }
 
-void numsetter_templ(t_templ* templ, t_colgen* colgen)
+void numsetter_templ(t_colgen* colgen)
 {
     if ( colgen->method & Rnd )
-        templ->fn = &set_random;
+        colgen->fn = &set_random;
     else if ( colgen->method & Scl )
-        templ->fn = &set_scalable;
+        colgen->fn = &set_scalable;
     else
-        templ->fn = &set_incremental;
+        colgen->fn = &set_incremental;
 }
 /*
 void filesetter_templ(t_templ* templ, t_colgen* colgen)

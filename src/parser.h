@@ -1,9 +1,13 @@
+#include "../dbgen.h"
 #define MAX_OPTIONS 4
-#define _error(A,B) fprintf(stderr, "dbgen: %s%s\n", A, B)
 
-#define ERR_READ "READ ERROR -- "
-#define ERR_FILE "CANT READ FILE -- "
-#define ERR_LINK "CANT LINK MORE THAN TWO FILES"
+typedef struct {
+    size_t size;
+    char delim;
+    int buffer[BUFSIZ];
+    short amt_cols;
+    FILE *out_stream;
+} dbconfig;
 
 typedef struct colinfo {
     char option[MAX_OPTIONS];
@@ -17,7 +21,7 @@ typedef struct colinfo {
     struct colinfo *link;
 } t_colinfo;
 
-t_colinfo *parser(int argc, char *argv[], short *ret_amt_info);
+t_colinfo *parser(int argc, char *argv[], dbconfig *database);
 
 short count_colinfo(int, char *[]);
 

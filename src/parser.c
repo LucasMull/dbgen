@@ -1,10 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <ctype.h>
 #include <unistd.h> //access()
-#include <assert.h>
-#include "parser.h"
+
+#include "../config.h"
+#include "../dbgen.h"
 
 enum optype {
     Option=1, 
@@ -91,7 +89,7 @@ static void op_select(int argc, char *argv[], t_colinfo *info)
     }
 }
 
-t_colinfo *parser(int argc, char *argv[], short *ret_amt_cols)
+t_colinfo *parser(int argc, char *argv[], dbconfig* database)
 {
     if (argc <= 1){
         _error(ERR_READ,"no argument given");
@@ -109,8 +107,8 @@ t_colinfo *parser(int argc, char *argv[], short *ret_amt_cols)
     init_colinfo(info, amt_cols);
     op_select(argc, argv, info);
 
-    if ( ret_amt_cols ){
-        *ret_amt_cols = amt_cols;
+    if ( database ){
+        database->amt_cols = amt_cols;
     }
 
     return info;
