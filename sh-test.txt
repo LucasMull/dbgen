@@ -1,1 +1,1 @@
--r /b [content/nomes.txt,25] -r /t [content/sobrenomes.txt] -r -u -s [7500000000-9999999999] ~ [10.50-20.30] -rs [1000.22598-9999.5578,25] ~ [1000-9999,50] ~ [content/passwords.txt] -us [100-500]
+-r -u -s [7500000000-9999999999] ~ [10.50-20.30] -rs [1000.22598-9999.5578,25] ~ [1000-9999,50] ~ [content/passwords.txt] -us [100-500] -r /s [content/nomes.txt,25] -r [content/sobrenomes.txt] 
