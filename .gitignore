@@ -1,8 +1,6 @@
 clients
 data.csv
 obj
-run
-multip.c
+dbgen
 *.swp
-README.md
 unused

@@ -18,9 +18,9 @@ MAIN = $(OBJDIR)/main.o
 
 .PHONY : clean all debug
 
-all: run
+all: dbgen
 
-run: build
+dbgen: build
 	$(CC) -o $@ $(OBJS) $(LDLIBS)
 
 build: mkdir $(MAIN) $(OBJS)
@@ -36,4 +36,4 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 debug : $(MAINC) $(SRCDIR)/*.c
 	$(CC) -g $(MAINC) $(SRCDIR)/*.c -o debug.out $(CFLAGS)
 clean :
-	-rm -rf run data.csv $(OBJDIR) debug.out
+	-rm -rf dbgen data.csv $(OBJDIR) debug.out
