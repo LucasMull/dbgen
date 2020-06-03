@@ -1,27 +1,21 @@
 typedef struct node {
-        union {
-            char *svalue;
-            double *dvalue;
-        };
+        char *svalue;
+
         struct node *next;
         struct node *prev;
 } t_node;
 
 typedef struct list {
-    union {
-        char *svalue;
-        double dvalue;
-    };
+    char *svalue;
+    double dvalue;
 
     t_node **root;
     size_t tree_size;
 } t_list;
 
 typedef struct templ {
-    union {
-        double dvalue;
-        char *svalue;
-    };
+    char *svalue;
+    double dvalue;
 } t_templ;
 
 typedef struct colgen {
@@ -32,10 +26,10 @@ typedef struct colgen {
         t_list **_list;
     };
 
-    size_t amt_row;
+    unsigned int amt_row;
     char delim;
 
-    void (*fn)(struct colgen*);
+    void (*fn)(struct colgen*, dbconfig*);
     struct colgen *_linker;
 
    //union because if gentype is File there is no reason to use range,
@@ -48,16 +42,17 @@ typedef struct colgen {
         };
         char *file;
     };
+    char format_data[10]; //format data to be printed
 } t_colgen;
 
 t_list *init_list();
-void start_arrlist(t_colgen*);
+void start_arrlist(t_colgen*, dbconfig*);
 void destroy_list(t_list*, short);
 void destroy_arrlist(short, t_list**, int);
 void print_list(size_t, t_list**, short);
 
 t_templ *init_templ();
-void start_templ(t_colgen*, t_templ*);
+void start_templ(t_colgen*, t_templ*, dbconfig*);
 void destroy_templ(t_templ*);
 void print_templ(t_templ*);
 

@@ -107,9 +107,8 @@ t_colinfo *parser(int argc, char *argv[], dbconfig* database)
     init_colinfo(info, amt_cols);
     op_select(argc, argv, info);
 
-    if ( database ){
+    if ( database )
         database->amt_cols = amt_cols;
-    }
 
     return info;
 }
@@ -145,15 +144,13 @@ void print_colinfo(t_colinfo* info, short amt_cols)
 
 void init_colinfo(t_colinfo* info, short amt_cols)
 {
+    //every other member set to NULL value
+    const t_colinfo default_colinfo = { 
+        .option = {'\0'} 
+    };
+
     for ( short i = 0; i < amt_cols; ++i ){
-        (info+i)->option[0] = '\0';
-        (info+i)->lwall = NULL;
-        (info+i)->rwall = NULL;
-        (info+i)->amount = NULL;
-        (info+i)->file = NULL;
-        (info+i)->delim = '\0';
-        (info+i)->decimals = 0;
-        (info+i)->link = NULL;
+        info[i] = default_colinfo;
     }
 }
 
@@ -334,9 +331,14 @@ void def_delim(char str[], t_colinfo *info)
     }
 
     switch (str[0]){
-        case 'b': case '\"': case '\'':
-        case '|' : case '/' : case ';' :
+        case 's': 
+            info->delim = ' ';
+            break;
         case 't' :
+            info->delim = '\t';
+            break;
+        case '\"': case '\'': case '|' : 
+        case '/' : case ';' :
             info->delim = str[0];
             break;
         default:

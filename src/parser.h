@@ -2,10 +2,10 @@
 #define MAX_OPTIONS 4
 
 typedef struct {
-    size_t size;
+    unsigned int amt_rows; //aka database size
+    unsigned short amt_cols;
     char delim;
     int buffer[BUFSIZ];
-    short amt_cols;
     FILE *out_stream;
 } dbconfig;
 

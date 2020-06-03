@@ -6,7 +6,7 @@ enum gentype {
     List=2,
     File=4,
 
-    TotalGens=3,
+    TotalGens=3
 };
 
 enum methodtype { 
@@ -18,19 +18,19 @@ enum methodtype {
     Undef=0
 };
 
+
 t_list *init_list()
 {
     t_list *new_list = malloc(sizeof(t_list));
     assert(new_list);
 
-    new_list->svalue = NULL;
-    new_list->root = NULL;
-    new_list->tree_size = 0;
+    const t_list default_list = { NULL };
+    *new_list = default_list;
 
     return new_list;
 }
 
-void start_arrlist(t_colgen *colgen)
+void start_arrlist(t_colgen *colgen, dbconfig *database)
 {
     assert(!colgen->_list);
     assert(colgen->amt_row);
@@ -44,7 +44,7 @@ void start_arrlist(t_colgen *colgen)
     if ( colgen->gentype & List ){
         if ( colgen->gentype & File ){
             file_to_arrlist(new_arrlist, colgen);
-        } else { // normal list
+        } else {
             nums_to_arrlist(new_arrlist, colgen);
         }
     }
@@ -52,20 +52,21 @@ void start_arrlist(t_colgen *colgen)
     colgen->_list = new_arrlist;
 }
 
-void destroy_arrlist(short gentype, t_list** list, int amt_row)
+void destroy_arrlist(short gentype, t_list** arrlist, int amt_row)
 {
-    assert(list);
+    assert(arrlist);
 
-        for ( int i = 0; i < amt_row; ++i ){
-            destroy_list(list[i], gentype);
-        } free(list);
+    for ( int i = 0; i < amt_row; ++i ){
+        destroy_list(arrlist[i], gentype);
+    } 
+    free(arrlist);
 }
 
 void destroy_list(t_list* list, short gentype)
 {
     assert(list);
 
-    if (( gentype == ( File | List ) ) && ( list->svalue ))
+    if (( gentype == ( File | List )) && ( list->svalue ))
         free(list->svalue);
     if ( list->root )
         free(list->root);
@@ -78,24 +79,25 @@ t_templ *init_templ()
     t_templ *new_templ = malloc(sizeof(t_templ));
     assert(new_templ);
 
-    new_templ->dvalue = 0;
+    const t_templ default_templ = { NULL };
+    *new_templ = default_templ;
 
     return new_templ;
 }
 
-void start_templ(t_colgen* colgen, t_templ* new_templ)
+void start_templ(t_colgen* colgen, t_templ* new_templ, dbconfig* database)
 {
     assert(colgen);
     assert(new_templ);
     assert(!colgen->_template);
 
-    new_templ->dvalue = colgen->rwall - colgen->lwall;
+    new_templ->dvalue = colgen->lwall;
     
     if (colgen->gentype & Template){
         if (colgen->gentype & File){
             //filesetter_templ(colgen);
         } else {
-            numsetter_templ(colgen);
+            numsetter_templ(colgen, database);
         }
     }
     
@@ -120,13 +122,13 @@ void def_typeof(t_colinfo *info, t_colgen *colgen)
 
     enum methodtype methods = Rnd;
     for ( short i = 0; i < TotalMethods; ++i ){
-        if ( strchr(info->option, letter[i]) ){
+        if ( strchr(info->option, letter[i])){
             new_method |= ( methods << i );
         }
     }
     
     //if new_method is random and also unique or scalable
-    if (( new_method & Rnd ) && ( new_method & ( Unq | Scl ) )){ 
+    if (( new_method & Rnd ) && ( new_method & ( Unq | Scl ))){ 
         new_gentype = List; //then it must be a list
     } else {
         new_gentype = Template; //otherwise it's a template
@@ -147,18 +149,32 @@ t_colgen *init_colgen(dbconfig* database)
 {
     t_colgen *new_colgen = malloc(sizeof(t_colgen));
 
-    new_colgen->fn = NULL;
-    new_colgen->method = Undef;
-    new_colgen->gentype = Undef;
-    new_colgen->_list = NULL; //will NULL _template aswell
-    new_colgen->amt_row = database->size; 
-    new_colgen->lwall = 0.0;
-    new_colgen->rwall = database->size;
-    new_colgen->delim = database->delim;
-    new_colgen->decimals = 0;
-    new_colgen->_linker = NULL;
+    //everything else is set to NULL value
+    const t_colgen default_colgen = { 
+        .amt_row = database->amt_rows,
+        .rwall = database->amt_rows,
+        .delim = database->delim    
+    };
+
+    *new_colgen = default_colgen;
 
     return new_colgen;
+}
+
+static size_t count_flines(char *file)
+{
+    FILE *f_count = fopen(file, "r");
+    const short LEN = 50;
+    assert(f_count);
+
+    char ptr_str[LEN];
+    size_t ln;
+    for( ln = 0; fgets(ptr_str, LEN-1, f_count); ++ln )
+        continue;
+
+    fclose(f_count);
+    
+    return ln;
 }
 
 t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, dbconfig* database)
@@ -177,18 +193,36 @@ t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, dbconfig* database)
     if ( info->decimals )
         colgen->decimals = info->decimals;
 
-    if (( info->amount ) && ( atoi(info->amount) < database->size ))
-        colgen->amt_row = atoi(info->amount);
-    else if (( colgen->rwall - colgen->lwall ) < database->size )
-        colgen->amt_row = colgen->rwall - colgen->lwall;
-
-
     def_typeof(info, colgen);
-    if ( colgen->gentype & List )
-        start_arrlist(colgen); 
-    else if ( colgen->gentype & Template )
-        start_templ(colgen, init_templ());
-    
+    /*
+     * if is of file-list type and random method than it is necessary to
+     * fetch the entire file into memory
+     * (otherwise random elements scope would be limited to default db size)
+     */
+    if (( colgen->gentype == ( File | List )) && ( colgen->method & Rnd )){
+        colgen->amt_row = count_flines(colgen->file);
+    } // else if designated amount to be generated is lower than default db size
+    else if (( info->amount ) && ( atoi(info->amount) < database->amt_rows )){
+        colgen->amt_row = atoi(info->amount);
+    } // else if range is lower than default db_size, assign range as amt
+    else if (( colgen->rwall - colgen->lwall ) < database->amt_rows ){
+        colgen->amt_row = colgen->rwall - colgen->lwall;
+    }
+    // else amt_row will be of default db size
+
+    if ( colgen->gentype & File ){
+        sprintf(colgen->format_data,"%%s%%c");
+    } else {
+        sprintf(colgen->format_data,"%%.%df%%c",colgen->decimals);
+    }
+
+    if ( colgen->gentype & List ){
+        start_arrlist(colgen, database);
+    } 
+    else if ( colgen->gentype & Template ){
+        start_templ(colgen, init_templ(), database);
+    }
+
     return colgen;
 }
 
@@ -221,6 +255,8 @@ t_colgen **start_arrcolgen(t_colinfo *info, dbconfig* database)
             ++i;        
         }
     }
+    // makes sure last col will not have delim and will jump line
+    new_arrcolgen[database->amt_cols-1]->delim = '\n';
 
     return new_arrcolgen;
 }
@@ -229,19 +265,15 @@ void print_list(size_t amt_rows, t_list **list, short gentype)
 {
     assert(list);
     
-    for ( int i = 0; i < amt_rows; ++i ){
+    for ( int i = 0; i < 5; ++i ){
         if ( gentype == List ){
             fprintf(stderr, "\t# %f\n", list[i]->dvalue);
         }
-        else if (( gentype == ( File | List ) ) && ( list[i]->svalue )){
+        else if (( gentype == ( File | List )) && ( list[i]->svalue )){
             fprintf(stderr, "\t# %s\n", list[i]->svalue);
         }
-
-        if ( list[i]->tree_size ){
-            fprintf(stderr, "\t#%d tree_size: %ld", i+1,
-                                                    list[i]->tree_size);
-        }
     } fputc('\n', stderr);
+    fprintf(stderr, "\tand %d more ...\n",abs(amt_rows-5));
 }
 
 void print_templ(t_templ *templ)
@@ -256,7 +288,7 @@ void print_arrcolgen(t_colgen **colgen, int amt_cols)
     assert(colgen);
 
     for ( int i = 0; i < amt_cols; ++i ){
-        fprintf(stderr, "n#: %d\nmethod: %d\namt_row: %ld\ndelim: %c\ndecimals: %d\nlinker: %p\n", i+1, colgen[i]->method, colgen[i]->amt_row, colgen[i]->delim, colgen[i]->decimals, (void*)colgen[i]->_linker);
+        fprintf(stderr, "n#: %d\nmethod: %d\namt_row: %d\ndelim: %c\ndecimals: %d\nlinker: %p\n", i+1, colgen[i]->method, colgen[i]->amt_row, colgen[i]->delim, colgen[i]->decimals, (void*)colgen[i]->_linker);
         
         if ( colgen[i]->gentype & Template){
             if ( colgen[i]->gentype & File ){

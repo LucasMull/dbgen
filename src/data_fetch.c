@@ -6,7 +6,7 @@ enum gentype {
     List=2,
     File=4,
 
-    TotalGens=3,
+    TotalGens=3
 };
 
 enum methodtype { 
@@ -18,6 +18,33 @@ enum methodtype {
     Undef=0
 };
 
+//will print from random indexes
+void list_random(t_colgen* colgen, dbconfig* database)
+{
+    fprintf(database->out_stream, colgen->format_data,
+        colgen->_list[rand()%colgen->amt_row]->svalue,
+        colgen->delim
+    );
+}
+
+//will print in order
+void list_incremental(t_colgen* colgen, dbconfig* database)
+{
+    //frees current list(one use only) index
+    if ( colgen->amt_row ){
+        fprintf(database->out_stream, colgen->format_data,
+            colgen->_list[colgen->amt_row-1]->dvalue,
+            colgen->delim
+        );
+
+        free( colgen->_list[colgen->amt_row-1] );
+        --colgen->amt_row;
+    } else {
+        fprintf(database->out_stream, "(NULL)%c",
+            colgen->delim
+        );
+    }
+}
 
 /*
  * Read file and store each line as a string value of index i in the array
@@ -27,17 +54,19 @@ void file_to_arrlist(t_list** arrlist, t_colgen* colgen)
     FILE *f_read = fopen(colgen->file, "r");
     assert(f_read);
 
-    size_t ln_total = colgen->amt_row; 
     const int LEN = 50;
 
     char ptr_str[LEN];
-    size_t i = 0;
-    while ( (fgets(ptr_str, LEN-1, f_read)) && (i < ln_total) ){
-        arrlist[i]->svalue = strndup(ptr_str, strlen(ptr_str)-1);
-        assert(arrlist[i]->svalue);
+    
+    size_t i = 1;
+    while ( (fgets(ptr_str, LEN-1, f_read)) && (i <= colgen->amt_row) ){
+        arrlist[colgen->amt_row-i]->svalue = strndup(ptr_str, strlen(ptr_str)-1);
+        assert(arrlist[colgen->amt_row-i]->svalue);
 
         ++i;
     }
+    colgen->fn = &list_random;
+
     fclose(f_read);
 }
 
@@ -50,56 +79,74 @@ void list_swap(t_list** ptr1, t_list** ptr2)
     *ptr2 = temp_ptr;
 }
 
-//Makes use of str_swap(), to swap string pointers randomly
 void shuffle_arrlist(t_list **arrlist, t_colgen* colgen)
 {
     for ( size_t i = 0 ; i < colgen->amt_row ; ++i ){ //shuffle
-        int rnd = rand() % colgen->amt_row;
-        list_swap( arrlist + i, arrlist + rnd );
+        list_swap( arrlist + i, arrlist + rand()%colgen->amt_row );
     }
 }
 
-void set_scalable(t_colgen* colgen)
+void templ_scalable(t_colgen* colgen, dbconfig* database)
 {
     double first = colgen->lwall;
     double last = colgen->rwall;
-    size_t amount = colgen->amt_row;
-
+    size_t amount = database->amt_rows;
+    
     if ( colgen->_template->dvalue < last ){
-        unsigned int pad = (last - first) / amount;
+        unsigned int pad = 2; 
+        if ( amount < (last-first) ) {
+            pad = (last - first) / amount;
+        }
+
         colgen->_template->dvalue +=  rand() % pad;
-    } else {
-        colgen->_template->dvalue = last;
+
+        if ( colgen->_template->dvalue > last )
+            colgen->_template->dvalue = last;
     }
+
+    fprintf(database->out_stream, colgen->format_data,
+        colgen->_template->dvalue,
+        colgen->delim
+    );
 }
 
-void set_incremental(t_colgen* colgen)
+void templ_incremental(t_colgen* colgen, dbconfig* database)
 {
     double last = colgen->rwall;
 
-    if ( colgen->_template->dvalue < last ){
+    if ( colgen->_template->dvalue < last )
         ++colgen->_template->dvalue;
-    }
+
+    fprintf(database->out_stream, colgen->format_data,
+        colgen->_template->dvalue,
+        colgen->delim
+    );
 }
 
-void set_random(t_colgen* colgen)
+void templ_random(t_colgen* colgen, dbconfig* database)
 {
     double first = colgen->lwall;
     double last = colgen->rwall;
     
     size_t rnd = rand() % (size_t)(last - first);
     colgen->_template->dvalue = first + rnd; 
+
+    fprintf(database->out_stream, colgen->format_data,
+        colgen->_template->dvalue,
+        colgen->delim
+    );
 }
 
-void numsetter_templ(t_colgen* colgen)
+void numsetter_templ(t_colgen* colgen, dbconfig* database)
 {
     if ( colgen->method & Rnd )
-        colgen->fn = &set_random;
+        colgen->fn = &templ_random;
     else if ( colgen->method & Scl )
-        colgen->fn = &set_scalable;
+        colgen->fn = &templ_scalable;
     else
-        colgen->fn = &set_incremental;
+        colgen->fn = &templ_incremental;
 }
+
 /*
 void filesetter_templ(t_templ* templ, t_colgen* colgen)
 {
@@ -138,8 +185,8 @@ void gen_incremental(t_list** arrlist, t_colgen* colgen)
     double first = colgen->lwall;
     size_t amount = colgen->amt_row;
 
-    for ( size_t i = 0; i < amount; ++i )
-        arrlist[i]->dvalue = first + i;
+    for ( size_t i = 1; i <= amount; ++i )
+        arrlist[amount-i]->dvalue = first + (i-1);
 }
 
 void nums_to_arrlist(t_list** arrlist, t_colgen* colgen)
@@ -152,4 +199,6 @@ void nums_to_arrlist(t_list** arrlist, t_colgen* colgen)
 
         if ( colgen->method & Rnd )
             shuffle_arrlist(arrlist, colgen);
+
+        colgen->fn = &list_incremental;
 }
