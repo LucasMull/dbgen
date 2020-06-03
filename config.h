@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 
 #define _error(A,B) fprintf(stderr, "dbgen: %s%s\n", A, B)
 
