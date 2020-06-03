@@ -1,17 +1,17 @@
-#dbgen
-###database generator cli utility tool
+# dbgen
+### database generator cli utility tool
 
-##SYNOPSIS
+## SYNOPSIS
       dbgen [OPTION]... [DELIM]... [FIELD]...
 
-##DESCRIPTION
+## DESCRIPTION
       (WIP)
 
-##INSTALLING
+## INSTALLING
       (WIP) type sudo make install to build dbgen in your usr/local/bin
       type make to build dbgen in it's folder.
 
-##OPTIONS
+## OPTIONS
       -r
             random values from specified field file or range of numbers.
       -u      
@@ -21,7 +21,7 @@
       ~     (WIP) will assume the next column is linked to the leftmost
             standalone (not linked to any other) column.
 
-##DELIM
+## DELIM
       /s
             delim of designated column will be blank space
       /t
@@ -29,7 +29,7 @@
       \ " ' ;
             delim of designated column will be any of the above chars
 
-##FIELD
+## FIELD
      Every field must be enclosed by square brackets, and can either assume 
      a range of numbers to be manipulated, or a file to have it's members 
      manipulated. 
