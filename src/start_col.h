@@ -1,65 +1,84 @@
-typedef struct node {
+typedef struct data {
+    union {
         char *svalue;
+        double dvalue;
+    };
+} t_data;
 
-        struct node *next;
-        struct node *prev;
-} t_node;
+typedef struct {
+    t_data tag; //if linker is gentype file tag will be svalue
+                //otherwise will be dvalue
 
-typedef struct list {
-    char *svalue;
-    double dvalue;
+    union { //if link's gentype is file will store svalue,
+            //otherwise will store dvalue
+        char **store_svalue;
+        double *store_dvalue;
+    };
+    unsigned int n_amt;
+} linkstorage;
 
-    t_node **root;
-    size_t tree_size;
-} t_list;
-
-typedef struct templ {
-    char *svalue;
-    double dvalue;
-} t_templ;
+typedef struct link {
+    linkstorage **storage;
+    unsigned int n_amt;
+} t_link;
 
 typedef struct colgen {
-    char method;
-    int gentype; //can be either _templ or _list generated
-    union {
-        t_templ *_template;
-        t_list **_list;
-    };
+    char method; // how data will be generated
+                 // random, unique, scalable (...)
 
-    unsigned int amt_row;
-    char delim;
+    int gentype; //can be either _template, _list or _link gentype
+    union {
+        t_data *_template;
+
+        struct {
+            t_data **_list;
+            t_data *_lindex; // points to index of last output list
+        };                   // will point to NULL if column prints
+    };                       // incremental values
+
+    t_link *_link;
+    struct colgen *_linker; //a reference to linker
 
     void (*fn)(struct colgen*, dbconfig*);
-    struct colgen *_linker;
 
-   //union because if gentype is File there is no reason to use range,
-   //and if gentype is not File then file won't be used
-    union {
-        struct {
+    unsigned int amt_row; //aka max amount of elements in that column
+
+    char delim; //will be set to newline on the last column
+    char format_data[10]; //format data to be printed
+
+    union { //can be either range of numbers or file's content
+        struct { 
             double lwall; //start of range
             double rwall; //end of range
             char decimals;
         };
         char *file;
     };
-    char format_data[10]; //format data to be printed
 } t_colgen;
 
-t_list *init_list();
-void start_arrlist(t_colgen*, dbconfig*);
-void destroy_list(t_list*, short);
-void destroy_arrlist(short, t_list**, int);
-void print_list(size_t, t_list**, short);
+t_data *init_data();
 
-t_templ *init_templ();
-void start_templ(t_colgen*, t_templ*, dbconfig*);
-void destroy_templ(t_templ*);
-void print_templ(t_templ*);
+void start_arrlist(t_colgen*, dbconfig*);
+void destroy_list(t_data*, t_colgen*);
+void destroy_arrlist(t_colgen*);
+void print_arrlist(size_t, t_data**, short);
+
+void start_templ(t_colgen*, t_data*, dbconfig*);
+void destroy_templ(t_data*);
+void print_templ(t_data*);
+
+linkstorage *init_linkstorage();
+linkstorage *start_linkstorage(t_colgen*, t_colgen*, linkstorage*);
+void destroy_linkstorage(linkstorage*, const int);
+
+t_link *init_link();
+void start_link(t_colgen*, t_colgen*, t_link*, dbconfig*);
+void destroy_link(t_link*, const int);
 
 void def_typeof(t_colinfo*, t_colgen*);
 
 t_colgen *init_colgen(dbconfig*);
-t_colgen *start_colgen(t_colinfo*, t_colgen*, dbconfig*);
+t_colgen *start_colgen(t_colinfo*, t_colgen*, t_colgen*, dbconfig*);
 t_colgen **start_arrcolgen(t_colinfo*, dbconfig*);
 
 void destroy_colgen(t_colgen*);

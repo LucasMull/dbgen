@@ -11,6 +11,16 @@ enum optype {
     Link=8
 };
 
+enum methodtype {
+    Rnd=1,
+    Unq=2,
+    Scl=4,
+    Fix=8, // amt of rows is defined after a comma
+    Lnk=16, // will be useful for fn start_colgen at start_col.c
+
+    Undef=0
+};
+
 static short parse_op(char *argv[], t_colinfo *info)
 {
     //lock makes sure that when consecutive linking, each link is
@@ -131,11 +141,11 @@ short count_colinfo(int argc, char *argv[])
 void print_colinfo(t_colinfo* info, short amt_cols)
 {
     for ( short i = 0; i < amt_cols; ++i ){
-        fprintf(stderr, "\noption: %s\nfile: %s\nrange: %s-%s\namount: %s\ndelim: %c\ndecimals: %d\nlink: %p\n\n",(info+i)->option, (info+i)->file, (info+i)->lwall, (info+i)->rwall, (info+i)->amount, (info+i)->delim, (info+i)->decimals, (void*)(info+i)->link);
+        fprintf(stderr, "\noption: %d\nfile: %s\nrange: %s-%s\namount: %s\ndelim: %c\ndecimals: %d\nlink: %p\n\n",(info+i)->option, (info+i)->file, (info+i)->lwall, (info+i)->rwall, (info+i)->amount, (info+i)->delim, (info+i)->decimals, (void*)(info+i)->link);
 
         t_colinfo *ptr_link = (info+i)->link;
         while ( ptr_link ){
-            fprintf(stderr, "\toption: %s\n\tfile: %s\n\trange: %s-%s\n\tamount: %s\n\tdelim: %c\n\tdecimals: %d\n\tlink: %p\n\n",ptr_link->option, ptr_link->file, ptr_link->lwall, ptr_link->rwall, ptr_link->amount, ptr_link->delim, ptr_link->decimals, (void*)ptr_link->link);
+            fprintf(stderr, "\toption: %d\n\tfile: %s\n\trange: %s-%s\n\tamount: %s\n\tdelim: %c\n\tdecimals: %d\n\tlink: %p\n\n",ptr_link->option, ptr_link->file, ptr_link->lwall, ptr_link->rwall, ptr_link->amount, ptr_link->delim, ptr_link->decimals, (void*)ptr_link->link);
 
             ptr_link = ptr_link->link;
         }
@@ -145,9 +155,7 @@ void print_colinfo(t_colinfo* info, short amt_cols)
 void init_colinfo(t_colinfo* info, short amt_cols)
 {
     //every other member set to NULL value
-    const t_colinfo default_colinfo = { 
-        .option = {'\0'} 
-    };
+    const t_colinfo default_colinfo = { 0 };
 
     for ( short i = 0; i < amt_cols; ++i ){
         info[i] = default_colinfo;
@@ -187,6 +195,7 @@ void def_link(char str[], t_colinfo *info)
     ptr_prev->link = ptr_next;    
 
     init_colinfo(ptr_next, 1);
+    ptr_next->option |= Lnk;
 
     char **arg = malloc(sizeof(char*));
     *arg = str;
@@ -198,16 +207,18 @@ void def_link(char str[], t_colinfo *info)
 
 void def_option(char str[], t_colinfo *info)
 {
-    if ( strlen(str) > MAX_OPTIONS ){
-        _error(ERR_READ, "too many options");
-        exit(EXIT_FAILURE);
-    }
-
     short i = 0;
+    short new_option = Undef;
     do {
        switch ( str[i] ){
-            case 'r': case 'u':
+            case 'r':
+                new_option |= Rnd; 
+                break;
+            case 'u':
+                new_option |= Unq;
+                break;
             case 's':
+                new_option |= Scl;
                 break;
             default:
                 _error(ERR_READ, str+i);
@@ -215,8 +226,8 @@ void def_option(char str[], t_colinfo *info)
        }
        ++i;
     } while ( str[i] );
-
-    strncat(info->option, str, MAX_OPTIONS);
+    
+    info->option |= new_option;
 }
 
 char *continue_then_init( int(*fn)(int), char *src, short *i)
@@ -295,6 +306,7 @@ void def_field(char str[], t_colinfo *info)
                 ++i; // skip comma
 
                 info->amount = continue_then_init(&isdigit, str, &i); 
+                info->option |= Fix;
                 break;
             default:
                 if ( ! isgraph(str[i]) ){
@@ -326,7 +338,7 @@ void def_field(char str[], t_colinfo *info)
 void def_delim(char str[], t_colinfo *info)
 {
     if ( strlen(str) != 1 ){
-        _error(ERR_READ, "invalid delim");
+        _error(ERR_READ, str);
         exit(EXIT_FAILURE);
     }
 

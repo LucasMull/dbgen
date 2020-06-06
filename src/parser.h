@@ -1,5 +1,4 @@
 #include "../dbgen.h"
-#define MAX_OPTIONS 4
 
 typedef struct {
     unsigned int amt_rows; //aka database size
@@ -10,7 +9,7 @@ typedef struct {
 } dbconfig;
 
 typedef struct colinfo {
-    char option[MAX_OPTIONS];
+    short option;
     char *lwall;
     char *rwall;
     char *amount;

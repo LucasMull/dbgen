@@ -5,29 +5,29 @@ enum gentype {
     Template=1, 
     List=2,
     File=4,
-
-    TotalGens=3
+    Link=8
 };
 
 enum methodtype { 
     Rnd=1, 
     Unq=2, 
     Scl=4, 
+    Fix=8,
+    Lnk=16,
 
     TotalMethods=3,
     Undef=0
 };
 
-
-t_list *init_list()
+t_data *init_data()
 {
-    t_list *new_list = malloc(sizeof(t_list));
-    assert(new_list);
+    t_data *new_data = malloc(sizeof(t_data));
+    assert(new_data);
 
-    const t_list default_list = { NULL };
-    *new_list = default_list;
+    const t_data default_data = { NULL };
+    *new_data = default_data;
 
-    return new_list;
+    return new_data;
 }
 
 void start_arrlist(t_colgen *colgen, dbconfig *database)
@@ -35,57 +35,42 @@ void start_arrlist(t_colgen *colgen, dbconfig *database)
     assert(!colgen->_list);
     assert(colgen->amt_row);
 
-    t_list **new_arrlist = malloc(colgen->amt_row * sizeof(t_list*));
+    t_data **new_arrlist = malloc(colgen->amt_row * sizeof(t_data*));
     assert(new_arrlist);
 
     for ( int i = 0; i < colgen->amt_row; ++i )
-        new_arrlist[i] = init_list();
+        new_arrlist[i] = init_data();
     
-    if ( colgen->gentype & List ){
-        if ( colgen->gentype & File ){
-            file_to_arrlist(new_arrlist, colgen);
-        } else {
-            nums_to_arrlist(new_arrlist, colgen);
-        }
-    }
+    if ( colgen->gentype & File )
+        filesetter_arrlist(new_arrlist, colgen);
+    else
+        numsetter_arrlist(new_arrlist, colgen);
 
     colgen->_list = new_arrlist;
 }
 
-void destroy_arrlist(short gentype, t_list** arrlist, int amt_row)
-{
-    assert(arrlist);
-
-    for ( int i = 0; i < amt_row; ++i ){
-        destroy_list(arrlist[i], gentype);
-    } 
-    free(arrlist);
-}
-
-void destroy_list(t_list* list, short gentype)
+void destroy_list(t_data* list, t_colgen* colgen)
 {
     assert(list);
 
-    if (( gentype == ( File | List )) && ( list->svalue ))
+    short gentype = colgen->gentype;
+
+    if (( gentype & File ) && ( list->svalue ))
         free(list->svalue);
-    if ( list->root )
-        free(list->root);
     free(list);
 }
 
-
-t_templ *init_templ()
+void destroy_arrlist(t_colgen* colgen)
 {
-    t_templ *new_templ = malloc(sizeof(t_templ));
-    assert(new_templ);
+    t_data** arrlist = colgen->_list;
+    assert(arrlist);
 
-    const t_templ default_templ = { NULL };
-    *new_templ = default_templ;
-
-    return new_templ;
+    for ( int i = 0; i < colgen->amt_row; ++i )
+        destroy_list(colgen->_list[i], colgen);
+    free(arrlist);
 }
 
-void start_templ(t_colgen* colgen, t_templ* new_templ, dbconfig* database)
+void start_templ(t_colgen* colgen, t_data* new_templ, dbconfig* database)
 {
     assert(colgen);
     assert(new_templ);
@@ -93,21 +78,89 @@ void start_templ(t_colgen* colgen, t_templ* new_templ, dbconfig* database)
 
     new_templ->dvalue = colgen->lwall;
     
-    if (colgen->gentype & Template){
-        if (colgen->gentype & File){
-            //filesetter_templ(colgen);
-        } else {
-            numsetter_templ(colgen, database);
-        }
-    }
+    numsetter_templ(colgen, database);
     
     colgen->_template = new_templ;
 }
 
-void destroy_templ(t_templ *templ)
+void destroy_templ(t_data *templ)
 {
     assert(templ);
     free(templ);
+}
+
+linkstorage *init_linkstorage()
+{
+    linkstorage *new_storage = malloc(sizeof(linkstorage));
+    assert(new_storage);
+
+    const linkstorage default_storage = { NULL };
+    *new_storage = default_storage;
+
+    return new_storage;
+}
+
+linkstorage *start_linkstorage(t_colgen* linker, t_colgen* colgen, linkstorage* new_storage)
+{
+    assert(linker);
+
+    if ( linker->gentype & List ) {
+        if ( linker->gentype & File )
+            new_storage->tag.svalue = linker->_lindex->svalue;
+        else if ( linker->_lindex ) // if null linker is incremental
+            new_storage->tag.dvalue = linker->_lindex->dvalue;
+    } else { //then it's a template
+        new_storage->tag.dvalue = linker->_template->dvalue;
+    }
+
+    return new_storage;
+}
+
+void destroy_linkstorage(linkstorage* storage, const int gentype)
+{
+    assert(storage);
+
+    if ( gentype & File ){
+        while ( storage->n_amt-- ){
+            free(storage->store_svalue[storage->n_amt]);
+        } free(storage->store_svalue);
+    } else {
+        free(storage->store_dvalue);
+    } free(storage);
+}
+
+t_link *init_link()
+{
+    t_link *new_link = malloc(sizeof(t_link));
+    assert(new_link);
+
+    const t_link default_link = { NULL };
+    *new_link = default_link;
+
+    return new_link;
+}
+
+void start_link(t_colgen *colgen, t_colgen *linker, t_link *new_link, dbconfig *database)
+{
+    assert(new_link);
+    new_link->storage = malloc(sizeof(linkstorage*));
+    assert(new_link->storage);
+
+    *new_link->storage = start_linkstorage(linker, colgen, init_linkstorage());
+    new_link->n_amt = 1;
+
+    colgen->_link = new_link;
+}
+
+void destroy_link(t_link *link, const int gentype)
+{
+    assert(link);
+
+    if ( link->storage ){
+        for ( unsigned int i = 0; i < link->n_amt ; ++i )
+            destroy_linkstorage(link->storage[i], gentype);
+        free(link->storage);
+    } free(link);
 }
 
 void def_typeof(t_colinfo *info, t_colgen *colgen)
@@ -115,31 +168,25 @@ void def_typeof(t_colinfo *info, t_colgen *colgen)
     assert(info);
     assert(colgen);
 
-    char letter[3] = {'r','u','s'}; //this needs to be made global
-
-    short new_method = Undef;
+    short new_method = info->option;
     short new_gentype = Undef;
+   
+    /*
+     * if amt of elements given is fixed (will be double checked later) it's a list
+     * else if new_method is random and also unique or scalable it's a list
+     * otherwise it's a template
+     */
+    if ( info->file )
+        new_gentype = ( File | List );
+    else if ( new_method & Fix )
+        new_gentype = List;
+    else if (( new_method & Rnd ) && ( new_method & ( Unq | Scl )))
+        new_gentype = List;
+    else
+        new_gentype = Template; 
 
-    enum methodtype methods = Rnd;
-    for ( short i = 0; i < TotalMethods; ++i ){
-        if ( strchr(info->option, letter[i])){
-            new_method |= ( methods << i );
-        }
-    }
-    
-    //if new_method is random and also unique or scalable
-    if (( new_method & Rnd ) && ( new_method & ( Unq | Scl ))){ 
-        new_gentype = List; //then it must be a list
-    } else {
-        new_gentype = Template; //otherwise it's a template
-    }
-
-    if ( info->file ){
-        if ( new_method & Rnd ){
-            new_gentype = List;
-        } 
-        new_gentype |= File;
-    }
+    if ( new_method & Lnk )
+        new_gentype |= Link;
 
     colgen->method = new_method;
     colgen->gentype = new_gentype;
@@ -151,7 +198,6 @@ t_colgen *init_colgen(dbconfig* database)
 
     //everything else is set to NULL value
     const t_colgen default_colgen = { 
-        .amt_row = database->amt_rows,
         .rwall = database->amt_rows,
         .delim = database->delim    
     };
@@ -177,7 +223,7 @@ static size_t count_flines(char *file)
     return ln;
 }
 
-t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, dbconfig* database)
+t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, t_colgen *linker, dbconfig* database)
 {
     if ( info->file ){
         colgen->file = strdup(info->file);
@@ -194,33 +240,43 @@ t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, dbconfig* database)
         colgen->decimals = info->decimals;
 
     def_typeof(info, colgen);
+
+    if (( colgen->method & Fix ) && ( atoi(info->amount) >= database->amt_rows )){
+        colgen->method ^= Fix; //can't have fixed amt be >= dbsize
+        colgen->gentype = Template; //and shouldn't be a list
+    }
     /*
-     * if is of file-list type and random method than it is necessary to
+     * if type is of file-list type and random method then it is necessary to
      * fetch the entire file into memory
      * (otherwise random elements scope would be limited to default db size)
+     * else if designated amount to be generated is lower than default db size
+     * else if range is lower than default dbsize, assign rante as amt
      */
-    if (( colgen->gentype == ( File | List )) && ( colgen->method & Rnd )){
+    if (( colgen->gentype & File ) && ( colgen->method & Rnd ))
         colgen->amt_row = count_flines(colgen->file);
-    } // else if designated amount to be generated is lower than default db size
-    else if (( info->amount ) && ( atoi(info->amount) < database->amt_rows )){
+    else if ( colgen->method & Fix )
         colgen->amt_row = atoi(info->amount);
-    } // else if range is lower than default db_size, assign range as amt
-    else if (( colgen->rwall - colgen->lwall ) < database->amt_rows ){
+    else if (( colgen->rwall - colgen->lwall ) < database->amt_rows )
         colgen->amt_row = colgen->rwall - colgen->lwall;
-    }
-    // else amt_row will be of default db size
+    else
+        colgen->amt_row = database->amt_rows;
 
-    if ( colgen->gentype & File ){
+
+    if ( colgen->gentype & File )
         sprintf(colgen->format_data,"%%s%%c");
-    } else {
+    else
         sprintf(colgen->format_data,"%%.%df%%c",colgen->decimals);
-    }
 
-    if ( colgen->gentype & List ){
+    if ( colgen->gentype & Link )
+        colgen->_linker = linker;
+
+    if ( colgen->gentype & List )
         start_arrlist(colgen, database);
-    } 
-    else if ( colgen->gentype & Template ){
-        start_templ(colgen, init_templ(), database);
+    else if ( colgen->gentype & Template )
+        start_templ(colgen, init_data(), database);
+
+    if ( colgen->gentype & Link ){
+        start_link(colgen, linker, init_link(), database);
     }
 
     return colgen;
@@ -236,24 +292,23 @@ t_colgen **start_arrcolgen(t_colinfo *info, dbconfig* database)
     int j = 0; //iterate through, and add to, colgen index
     int i = 0; //iterate through colinfo index
     while ( j < database->amt_cols ){
-        new_arrcolgen[j] = start_colgen(info+i, init_colgen(database), database); 
+        new_arrcolgen[j] = start_colgen(info+i, init_colgen(database), NULL, database); 
 
         if ( (info+i)->link ){
             int linker_index = j; //hold onto the linker index
             t_colinfo *ptr_link = (info+i)->link;
             while ( ptr_link ){
                 ++j;
-                new_arrcolgen[j] = start_colgen(ptr_link, init_colgen(database), database);
-                new_arrcolgen[j]->_linker = new_arrcolgen[linker_index];
+
+                new_arrcolgen[j] = start_colgen(ptr_link, init_colgen(database), new_arrcolgen[linker_index], database);
 
                 ptr_link = ptr_link->link;
             }
         }
         
-        ++j;
         if ( i < database->amt_cols ){
             ++i;        
-        }
+        } ++j;
     }
     // makes sure last col will not have delim and will jump line
     new_arrcolgen[database->amt_cols-1]->delim = '\n';
@@ -261,22 +316,20 @@ t_colgen **start_arrcolgen(t_colinfo *info, dbconfig* database)
     return new_arrcolgen;
 }
 
-void print_list(size_t amt_rows, t_list **list, short gentype)
+void print_arrlist(size_t amt_rows, t_data **arrlist, short gentype)
 {
-    assert(list);
+    assert(arrlist);
     
     for ( int i = 0; i < 5; ++i ){
-        if ( gentype == List ){
-            fprintf(stderr, "\t# %f\n", list[i]->dvalue);
-        }
-        else if (( gentype == ( File | List )) && ( list[i]->svalue )){
-            fprintf(stderr, "\t# %s\n", list[i]->svalue);
-        }
+        if ( gentype == List )
+            fprintf(stderr, "\t# %f\n", arrlist[i]->dvalue);
+        else if (( gentype == ( File | List )) && ( arrlist[i]->svalue ))
+            fprintf(stderr, "\t# %s\n", arrlist[i]->svalue);
     } fputc('\n', stderr);
     fprintf(stderr, "\tand %d more ...\n",abs(amt_rows-5));
 }
 
-void print_templ(t_templ *templ)
+void print_templ(t_data *templ)
 {
     assert(templ);
 
@@ -288,33 +341,28 @@ void print_arrcolgen(t_colgen **colgen, int amt_cols)
     assert(colgen);
 
     for ( int i = 0; i < amt_cols; ++i ){
-        fprintf(stderr, "n#: %d\nmethod: %d\namt_row: %d\ndelim: %c\ndecimals: %d\nlinker: %p\n", i+1, colgen[i]->method, colgen[i]->amt_row, colgen[i]->delim, colgen[i]->decimals, (void*)colgen[i]->_linker);
+        fprintf(stderr, "n#: %d\nmethod: %d\namt_row: %d\ndelim: %c\ndecimals: %d\n", i+1, colgen[i]->method, colgen[i]->amt_row, colgen[i]->delim, colgen[i]->decimals);
         
+        char gentype[15] = { 0 }; 
+        if ( colgen[i]->gentype & Link ){
+            fprintf(stderr,"linker: %p\n", (void*)colgen[i]->_linker);
+            strcpy(gentype,"Link");
+        }
+        if ( colgen[i]->gentype & File ){
+            fprintf(stderr,"file: %s\n", colgen[i]->file);
+            strcat(gentype,"File");
+        } else {
+            fprintf(stderr,"range: %f-%f\n", colgen[i]->lwall, colgen[i]->rwall);
+        }
         if ( colgen[i]->gentype & Template){
-            if ( colgen[i]->gentype & File ){
-                fprintf(stderr,"file: %s\ngentype: file_template\n",
-                                colgen[i]->file
-                                                                    );
-            } else {
-                fprintf(stderr,"range: %f-%f\ngentype: template\n",
-                                colgen[i]->lwall,
-                                colgen[i]->rwall
-                                                                    );
-            }
+            strcat(gentype, "Template");
+            fprintf(stderr, "gentype: %s\n", gentype);
             print_templ(colgen[i]->_template);
         } 
         else if ( colgen[i]->gentype & List ){
-            if ( colgen[i]->gentype & File ){
-                fprintf(stderr,"file: %s\ngentype: file_list\n",
-                                colgen[i]->file
-                                                                    );
-            } else {
-                fprintf(stderr,"range: %f-%f\ngentype: list\n",
-                                colgen[i]->lwall,
-                                colgen[i]->rwall
-                                                                    );
-            }
-            print_list( colgen[i]->amt_row, colgen[i]->_list, colgen[i]->gentype );
+            strcat(gentype,"List");
+            fprintf(stderr, "gentype: %s\n", gentype);
+            print_arrlist( colgen[i]->amt_row, colgen[i]->_list, colgen[i]->gentype );
         }
     }
 }
@@ -324,7 +372,10 @@ void destroy_colgen(t_colgen *colgen)
     if ( colgen->gentype & Template )
         destroy_templ(colgen->_template);
     else if ( colgen->gentype & List )
-        destroy_arrlist(colgen->gentype, colgen->_list, colgen->amt_row);
+        destroy_arrlist(colgen);
+
+    if ( colgen->gentype & Link )
+        destroy_link(colgen->_link, colgen->gentype);
     if ( colgen->gentype & File )
         free(colgen->file); 
     
