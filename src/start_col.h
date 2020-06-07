@@ -60,7 +60,7 @@ t_data *init_data();
 
 void start_arrlist(t_colgen*, dbconfig*);
 void destroy_list(t_data*, t_colgen*);
-void destroy_arrlist(t_colgen*);
+void destroy_arrlist(t_data**, t_colgen*);
 void print_arrlist(size_t, t_data**, short);
 
 void start_templ(t_colgen*, t_data*, dbconfig*);
@@ -74,8 +74,6 @@ void destroy_linkstorage(linkstorage*, const int);
 t_link *init_link();
 void start_link(t_colgen*, t_colgen*, t_link*, dbconfig*);
 void destroy_link(t_link*, const int);
-
-void def_typeof(t_colinfo*, t_colgen*);
 
 t_colgen *init_colgen(dbconfig*);
 t_colgen *start_colgen(t_colinfo*, t_colgen*, t_colgen*, dbconfig*);

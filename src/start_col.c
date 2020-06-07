@@ -33,18 +33,12 @@ t_data *init_data()
 void start_arrlist(t_colgen *colgen, dbconfig *database)
 {
     assert(!colgen->_list);
-    assert(colgen->amt_row);
 
     t_data **new_arrlist = malloc(colgen->amt_row * sizeof(t_data*));
     assert(new_arrlist);
 
     for ( int i = 0; i < colgen->amt_row; ++i )
         new_arrlist[i] = init_data();
-    
-    if ( colgen->gentype & File )
-        filesetter_arrlist(new_arrlist, colgen);
-    else
-        numsetter_arrlist(new_arrlist, colgen);
 
     colgen->_list = new_arrlist;
 }
@@ -55,30 +49,26 @@ void destroy_list(t_data* list, t_colgen* colgen)
 
     short gentype = colgen->gentype;
 
-    if (( gentype & File ) && ( list->svalue ))
+    if (( gentype & File ) && ( list->svalue )){
         free(list->svalue);
-    free(list);
+    } free(list);
 }
 
-void destroy_arrlist(t_colgen* colgen)
+void destroy_arrlist(t_data** arrlist, t_colgen* colgen)
 {
-    t_data** arrlist = colgen->_list;
     assert(arrlist);
 
-    for ( int i = 0; i < colgen->amt_row; ++i )
+    for ( int i = 0; i < colgen->amt_row; ++i ){
         destroy_list(colgen->_list[i], colgen);
-    free(arrlist);
+    } free(arrlist);
 }
 
 void start_templ(t_colgen* colgen, t_data* new_templ, dbconfig* database)
 {
-    assert(colgen);
     assert(new_templ);
     assert(!colgen->_template);
 
     new_templ->dvalue = colgen->lwall;
-    
-    numsetter_templ(colgen, database);
     
     colgen->_template = new_templ;
 }
@@ -86,6 +76,7 @@ void start_templ(t_colgen* colgen, t_data* new_templ, dbconfig* database)
 void destroy_templ(t_data *templ)
 {
     assert(templ);
+
     free(templ);
 }
 
@@ -121,9 +112,7 @@ void destroy_linkstorage(linkstorage* storage, const int gentype)
     assert(storage);
 
     if ( gentype & File ){
-        while ( storage->n_amt-- ){
-            free(storage->store_svalue[storage->n_amt]);
-        } free(storage->store_svalue);
+        free(storage->store_svalue);
     } else {
         free(storage->store_dvalue);
     } free(storage);
@@ -149,6 +138,7 @@ void start_link(t_colgen *colgen, t_colgen *linker, t_link *new_link, dbconfig *
     *new_link->storage = start_linkstorage(linker, colgen, init_linkstorage());
     new_link->n_amt = 1;
 
+    colgen->_linker = linker;
     colgen->_link = new_link;
 }
 
@@ -163,7 +153,7 @@ void destroy_link(t_link *link, const int gentype)
     } free(link);
 }
 
-void def_typeof(t_colinfo *info, t_colgen *colgen)
+static void def_typeof(t_colinfo *info, t_colgen *colgen)
 {
     assert(info);
     assert(colgen);
@@ -195,11 +185,13 @@ void def_typeof(t_colinfo *info, t_colgen *colgen)
 t_colgen *init_colgen(dbconfig* database)
 {
     t_colgen *new_colgen = malloc(sizeof(t_colgen));
+    assert(new_colgen);
 
     //everything else is set to NULL value
     const t_colgen default_colgen = { 
         .rwall = database->amt_rows,
-        .delim = database->delim    
+        .delim = database->delim,
+        .amt_row = database->amt_rows
     };
 
     *new_colgen = default_colgen;
@@ -210,17 +202,31 @@ t_colgen *init_colgen(dbconfig* database)
 static size_t count_flines(char *file)
 {
     FILE *f_count = fopen(file, "r");
-    const short LEN = 50;
     assert(f_count);
 
-    char ptr_str[LEN];
-    size_t ln;
-    for( ln = 0; fgets(ptr_str, LEN-1, f_count); ++ln )
-        continue;
+    const short len = 50;
+
+    char ptr_str[len];
+    size_t ln = 0;
+    while ( fgets(ptr_str, len-1, f_count) ){
+        ++ln;
+    };
 
     fclose(f_count);
     
     return ln;
+}
+
+static void def_fn(t_colgen* colgen, dbconfig* database)
+{
+    if ( colgen->gentype & List ){
+        if ( colgen->gentype & File )
+            filesetter_arrlist(colgen->_list, colgen);
+        else
+            numsetter_arrlist(colgen->_list, colgen);
+    } else { // colgen->gentype & Template
+        numsetter_templ(colgen, database);
+    }
 }
 
 t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, t_colgen *linker, dbconfig* database)
@@ -239,12 +245,14 @@ t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, t_colgen *linker, dbco
     if ( info->decimals )
         colgen->decimals = info->decimals;
 
+
     def_typeof(info, colgen);
 
     if (( colgen->method & Fix ) && ( atoi(info->amount) >= database->amt_rows )){
         colgen->method ^= Fix; //can't have fixed amt be >= dbsize
         colgen->gentype = Template; //and shouldn't be a list
     }
+
     /*
      * if type is of file-list type and random method then it is necessary to
      * fetch the entire file into memory
@@ -258,8 +266,6 @@ t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, t_colgen *linker, dbco
         colgen->amt_row = atoi(info->amount);
     else if (( colgen->rwall - colgen->lwall ) < database->amt_rows )
         colgen->amt_row = colgen->rwall - colgen->lwall;
-    else
-        colgen->amt_row = database->amt_rows;
 
 
     if ( colgen->gentype & File )
@@ -267,17 +273,18 @@ t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, t_colgen *linker, dbco
     else
         sprintf(colgen->format_data,"%%.%df%%c",colgen->decimals);
 
-    if ( colgen->gentype & Link )
-        colgen->_linker = linker;
 
     if ( colgen->gentype & List )
         start_arrlist(colgen, database);
     else if ( colgen->gentype & Template )
         start_templ(colgen, init_data(), database);
 
-    if ( colgen->gentype & Link ){
+    if ( colgen->gentype & Link )
         start_link(colgen, linker, init_link(), database);
-    }
+
+
+    def_fn(colgen, database);
+
 
     return colgen;
 }
@@ -369,15 +376,18 @@ void print_arrcolgen(t_colgen **colgen, int amt_cols)
 
 void destroy_colgen(t_colgen *colgen)
 {
-    if ( colgen->gentype & Template )
+    assert(colgen);
+
+    if ( colgen->gentype & List ){
+        if ( colgen->gentype & File ){
+            free(colgen->file); 
+        } destroy_arrlist(colgen->_list, colgen);
+    } else {
         destroy_templ(colgen->_template);
-    else if ( colgen->gentype & List )
-        destroy_arrlist(colgen);
+    }
 
     if ( colgen->gentype & Link )
         destroy_link(colgen->_link, colgen->gentype);
-    if ( colgen->gentype & File )
-        free(colgen->file); 
     
     free(colgen);
 }
@@ -386,7 +396,7 @@ void destroy_arrcolgen(t_colgen **arrcolgen, int amt_cols)
 {
     assert(arrcolgen);
 
-    for ( int i = 0; i < amt_cols; ++i )
+    for ( int i = 0; i < amt_cols; ++i ){
         destroy_colgen(arrcolgen[i]);
-    free (arrcolgen);
+    } free (arrcolgen);
 }
