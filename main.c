@@ -6,7 +6,7 @@ static short count_link_cols(t_colinfo*, short);
 int main(int argc, char *argv[])
 {
     dbconfig database = {
-        .amt_rows = 1000000, 
+        .amt_rows = 1000, 
         .delim = ',', 
         .buffer = {0}, 
         .amt_cols = 0,
