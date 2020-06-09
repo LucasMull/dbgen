@@ -135,9 +135,6 @@ void start_link(t_colgen *colgen, t_colgen *linker, t_link *new_link, dbconfig *
     new_link->storage = malloc(sizeof(linkstorage*));
     assert(new_link->storage);
 
-    *new_link->storage = start_linkstorage(linker, colgen, init_linkstorage());
-    new_link->n_amt = 1;
-
     colgen->_linker = linker;
     colgen->_link = new_link;
 }
@@ -260,7 +257,7 @@ t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, t_colgen *linker, dbco
      * else if designated amount to be generated is lower than default db size
      * else if range is lower than default dbsize, assign rante as amt
      */
-    if (( colgen->gentype & File ) && ( colgen->method & Rnd ))
+    if ( colgen->gentype & File )
         colgen->amt_row = count_flines(colgen->file);
     else if ( colgen->method & Fix )
         colgen->amt_row = atoi(info->amount);

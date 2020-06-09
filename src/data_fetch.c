@@ -15,6 +15,142 @@ enum methodtype {
     Fix=8
 };
 
+int create_sstorage(linkstorage* storage, t_data* list)
+{
+    ++storage->n_amt;
+    storage->store_svalue = realloc(storage->store_svalue, storage->n_amt * sizeof(char*));
+
+    storage->store_svalue[storage->n_amt-1] = list->svalue;
+
+    char* key = storage->store_svalue[storage->n_amt-1];
+    int i = storage->n_amt-1;
+    while (( i > 0 ) && ( strcmp(key, storage->store_svalue[i-1]) < 0 )){
+        storage->store_svalue[i] = storage->store_svalue[i-1];
+        --i;
+    } storage->store_svalue[i] = key;
+
+    return i;
+}
+
+int search_or_create_sstorage(linkstorage* storage, t_data* list)
+{
+    int top = storage->n_amt-1;
+    int low = 0;
+    int mid;
+    while ( low <= top ){
+        mid = ((unsigned int)low + (unsigned int)top) >> 1;
+        int cmp = strcmp(list->svalue, storage->store_svalue[mid]);
+        if ( cmp == 0 )
+            return -1;
+        if ( cmp < 0 )
+            top = mid-1;
+        else
+            low = mid+1;
+    }
+
+    return create_sstorage(storage, list);
+}
+
+
+int create_xvalue(t_colgen* colgen, linkstorage* storage)
+{
+    assert(storage);
+
+    int i = rand() % colgen->amt_row;
+    int temp_i = i;
+
+    short direction = 1;
+    int ceiling = colgen->amt_row;
+    
+    short loop_count = 0;
+    do {
+        int cmp;
+        while ( i != ceiling ){
+            cmp = search_or_create_sstorage(storage, colgen->_list[i]);
+            if ( cmp != -1 )
+                return cmp;
+
+            i += direction;
+        }
+        i = temp_i;
+        ceiling = -1;
+        direction *= -1;
+    } while ( ++loop_count < 2 ); //exits loop at 2
+
+    return -1; //can't assign new values
+}
+
+int create_stag(t_colgen* colgen, t_link* link, t_colgen* linker)
+{
+    ++link->n_amt;
+    link->storage = realloc(link->storage, link->n_amt * sizeof(linkstorage*));
+    link->storage[link->n_amt-1] = start_linkstorage(linker, colgen, init_linkstorage()); 
+
+    linkstorage* key = link->storage[link->n_amt-1];
+    int i = link->n_amt-1;
+    while (( i > 0 ) && ( strcmp(key->tag.svalue, link->storage[i-1]->tag.svalue) < 0 )){
+        link->storage[i] = link->storage[i-1];
+        --i;
+    } link->storage[i] = key;
+    
+    return i;
+}
+
+int search_or_create_stag(
+    t_colgen* colgen, 
+    t_link* link, 
+    t_colgen* linker, 
+    char* key_svalue )
+{
+    //check and return tag if already exists
+    int top = link->n_amt-1;
+    int low = 0;
+    int mid;
+    while ( low <= top ){
+        mid = ((unsigned int)low + (unsigned int)top) >> 1;
+        int cmp = strcmp(key_svalue, link->storage[mid]->tag.svalue);
+        if ( cmp == 0 )
+            return mid;
+        if ( cmp < 0 )
+            top = mid-1;
+        else
+            low = mid+1;
+    }
+
+    //otherwise create new tag and return it 
+    return create_stag(colgen, link, linker);
+}
+
+
+void sllink_sllinker(t_colgen* colgen, dbconfig* database)
+{
+    assert(colgen);
+
+    t_link *link = colgen->_link;
+    t_colgen *linker = colgen->_linker;
+
+    char slist[50] = { 0 };
+
+    int i = search_or_create_stag(
+      colgen,
+      link, 
+      linker, 
+      linker->_lindex->svalue //key_svalue
+    );
+
+    int j = create_xvalue(colgen, link->storage[i]);
+    if ( j != -1 )
+        strcpy(slist, link->storage[i]->store_svalue[j]);
+    else
+        strcpy(slist, "(NULL)");
+
+
+    fprintf(database->out_stream, colgen->format_data,
+        slist,
+        colgen->delim
+    );
+}
+
 /*
  * Stores numbers proportionally to the scope (last - first) provided, by making use of a 'padding' tool
  * ex: 1000 to 2000; amount of elements wanted = 5
@@ -37,7 +173,7 @@ static void gen_scalable(t_data** arrlist, t_colgen* colgen)
     last -= pad;
     while ( amount-- ){
         arrlist[amount]->dvalue = last + (rand() % pad);
-        last -= pad;
+        last -= arrlist[amount]->dvalue - 1;
     }
 }
 
@@ -110,111 +246,6 @@ void dlist_incremental(t_colgen* colgen, dbconfig* database)
     }
 }
 
-unsigned int search_dtag(t_link* link, t_colgen* linker)
-{
-    t_data *curr_data = linker->_lindex; // current data output by linker
-
-    for ( unsigned int i = 0; i < link->n_amt; ++i ){
-        if ( curr_data->dvalue == link->storage[i]->tag.dvalue )
-            return i;
-    }
-
-    return -1;
-}
-
-//turn this into binary search
-unsigned int search_stag(t_link* link, t_colgen* linker)
-{
-    t_data *curr_data = linker->_lindex; // current data output by linker
-
-    for ( unsigned int i = 0; i < link->n_amt; ++i ){
-        if ( !strcmp(curr_data->svalue, link->storage[i]->tag.svalue) )
-            return i;
-    }
-
-    return -1;
-}
-
-void sstore_slist(linkstorage* storage, t_data* list)
-{
-    ++storage->n_amt;
-    storage->store_svalue = realloc(storage->store_svalue, storage->n_amt * sizeof(char*));
-    storage->store_svalue[storage->n_amt-1] = list->svalue;
-}
-
-unsigned int find_sstore_slist(t_colgen* colgen, linkstorage* storage)
-{
-    assert(storage);
-
-    unsigned int rand_i = rand() % colgen->amt_row;
-    unsigned int temp_i = rand_i;
-
-    char direction = 1;
-    unsigned int ceiling = colgen->amt_row;
-    
-    char loop_count = 0; //quits loop at 2
-
-    do {
-        char found = 0;
-        while ( rand_i != ceiling ){
-            for ( unsigned int i = 0; i < storage->n_amt; ++i ){
-                if ( !strcmp(colgen->_list[rand_i]->svalue, storage->store_svalue[i]) ){
-                    found = 1;
-                    break;
-                }
-            }
-
-            if ( !found ){
-                sstore_slist(storage, colgen->_list[rand_i]);
-                return rand_i;
-            }
-
-            rand_i += direction;
-        }
-        rand_i = temp_i;
-        ceiling = 0;
-        direction = -1;
-    } while ( ++loop_count < 2 );
-
-    return -1;
-}
-
-void create_stag(t_colgen* colgen, t_link* link)
-{
-    ++link->n_amt;
-    link->storage = realloc(link->storage, link->n_amt * sizeof(linkstorage*));
-    link->storage[link->n_amt-1] = start_linkstorage(colgen->_linker, colgen, init_linkstorage()); 
-}
-
-//fix: split into various functions instead of a bunch of if elses
-void sllink_sllinker(t_colgen* colgen, dbconfig* database)
-{
-    assert(colgen);
-
-    t_link *link = colgen->_link;
-    t_colgen *linker = colgen->_linker;
-
-    char slist[50] = { 0 };
-    unsigned int i_found = search_stag(link, linker);
-    if ( i_found != -1 ){
-        unsigned int j_found = find_sstore_slist(colgen, link->storage[i_found]);
-        if ( j_found != -1 )
-            strcpy(slist, colgen->_list[j_found]->svalue);
-        else
-            strcpy(slist, "(NULL)");
-    } else { // means it has not been found, create new tag
-        unsigned int rand_i = rand() % colgen->amt_row;
-        create_stag(colgen, link);
-        sstore_slist(link->storage[link->n_amt-1], colgen->_list[rand_i]);
-
-        strcpy(slist, colgen->_list[rand_i]->svalue);
-    }
-
-    fprintf(database->out_stream, colgen->format_data,
-        slist,
-        colgen->delim
-    );
-}
 
 void filesetter_arrlist(t_data** arrlist, t_colgen* colgen)
 {

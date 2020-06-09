@@ -6,7 +6,7 @@ static short count_link_cols(t_colinfo*, short);
 int main(int argc, char *argv[])
 {
     dbconfig database = {
-        .amt_rows = 1000, 
+        .amt_rows = 1000000, 
         .delim = ',', 
         .buffer = {0}, 
         .amt_cols = 0,
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     //print_colinfo(info,info_amt_cols);
     clean_colinfo(info,info_amt_cols);
 
-    print_arrcolgen(arrcolgen, database.amt_cols);
+    //print_arrcolgen(arrcolgen, database.amt_cols);
     for ( unsigned int i = 0; i < database.amt_rows; ++i ){
         for ( unsigned short j = 0; j < database.amt_cols; ++j ){
             if ( arrcolgen[j]->fn ){
