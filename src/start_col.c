@@ -95,10 +95,10 @@ linkstorage *start_linkstorage(t_colgen* linker, t_colgen* colgen, linkstorage* 
 {
     assert(linker);
 
-    if ( linker->gentype & List ) {
+    if (( linker->gentype & List ) && ( linker->_lindex )){
         if ( linker->gentype & File )
             new_storage->tag.svalue = linker->_lindex->svalue;
-        else if ( linker->_lindex ) // if null linker is incremental
+        else
             new_storage->tag.dvalue = linker->_lindex->dvalue;
     } else { //then it's a template
         new_storage->tag.dvalue = linker->_template->dvalue;
@@ -325,10 +325,10 @@ void print_arrlist(size_t amt_rows, t_data **arrlist, short gentype)
     assert(arrlist);
     
     for ( int i = 0; i < 5; ++i ){
-        if ( gentype == List )
-            fprintf(stderr, "\t# %f\n", arrlist[i]->dvalue);
-        else if (( gentype == ( File | List )) && ( arrlist[i]->svalue ))
+        if ( gentype == File )
             fprintf(stderr, "\t# %s\n", arrlist[i]->svalue);
+        else
+            fprintf(stderr, "\t# %f\n", arrlist[i]->dvalue);
     } fputc('\n', stderr);
     fprintf(stderr, "\tand %d more ...\n",abs(amt_rows-5));
 }

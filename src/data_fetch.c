@@ -1,8 +1,6 @@
 #include "../config.h"
 #include "../dbgen.h"
 
-#define fcmp(A,B) ( A < B ) ? 1 : 0
-
 enum gentype {
     Template=1, 
     List=2,
@@ -17,6 +15,11 @@ enum methodtype {
     Fix=8
 };
 
+double dcmp(const double num1, const double num2)
+{
+    return num1 - num2;
+}
+
 int create_dstorage(linkstorage* storage, t_data* list)
 {
     ++storage->n_amt;
@@ -26,7 +29,7 @@ int create_dstorage(linkstorage* storage, t_data* list)
 
     double key = storage->store_dvalue[storage->n_amt-1];
     int i = storage->n_amt-1;
-    while (( i > 0 ) && ( fcmp(key, storage->store_dvalue[i-1]) < 0 )){
+    while (( i > 0 ) && ( dcmp(key, storage->store_dvalue[i-1]) < 0 )){
         storage->store_dvalue[i] = storage->store_dvalue[i-1];
         --i;
     } storage->store_dvalue[i] = key;
@@ -58,7 +61,7 @@ int search_or_create_dstorage(linkstorage* storage, t_data* list)
     int mid;
     while ( low <= top ){
         mid = ((unsigned int)low + (unsigned int)top) >> 1;
-        int cmp = fcmp(list->dvalue, storage->store_dvalue[mid]);
+        double cmp = dcmp(list->dvalue, storage->store_dvalue[mid]);
         if ( cmp == 0 )
             return -1; //can't link that value if it already exists
         if ( cmp < 0 )
@@ -77,7 +80,7 @@ int search_or_create_sstorage(linkstorage* storage, t_data* list)
     int mid;
     while ( low <= top ){
         mid = ((unsigned int)low + (unsigned int)top) >> 1;
-        int cmp = strcmp(list->svalue, storage->store_svalue[mid]);
+        double cmp = strcmp(list->svalue, storage->store_svalue[mid]);
         if ( cmp == 0 )
             return -1; //can't link that value if it already exists
         if ( cmp < 0 )
@@ -88,8 +91,8 @@ int search_or_create_sstorage(linkstorage* storage, t_data* list)
 
     return create_sstorage(storage, list);
 }
-
-int create_xvalue(
+//create exclusive list based value
+int create_xlvalue(
     t_colgen* colgen, 
     linkstorage* storage,
     int (*storage_fn)(linkstorage*, t_data*) )
@@ -116,6 +119,35 @@ int create_xvalue(
 
     return -1; //can't assign new values
 }
+//create exclusive template based value
+int create_xtvalue(
+    t_colgen* colgen, 
+    linkstorage* storage,
+    int (*storage_fn)(linkstorage*, t_data*) )
+{
+    assert(storage);
+    
+    size_t rnd = rand() % (size_t)(colgen->rwall - colgen->lwall);
+    colgen->_template->dvalue = colgen->lwall + rnd; 
+    double temp_dvalue = colgen->_template->dvalue;
+    
+    double ceiling = colgen->rwall;
+    short direction = 1;
+    do {
+        int cmp;
+        while ( colgen->_template->dvalue != ceiling ){
+            cmp = (storage_fn)(storage, colgen->_template);
+            if ( cmp != -1 )
+                return cmp;
+            colgen->_template->dvalue += direction;
+        }
+        colgen->_template->dvalue = temp_dvalue;
+        ceiling = -1;
+        direction *= -1;
+    } while ( direction > 0 ); //exits at second loop
+
+    return -1; //can't assign new values
+}
 
 int create_dtag(t_colgen* colgen, t_link* link, t_colgen* linker)
 {
@@ -126,7 +158,7 @@ int create_dtag(t_colgen* colgen, t_link* link, t_colgen* linker)
 
     linkstorage* key = link->storage[link->n_amt-1];
     int i = link->n_amt-1;
-    while (( i > 0 ) && ( fcmp(key->tag.dvalue,link->storage[i-1]->tag.dvalue) )){
+    while (( i > 0 ) && ( dcmp(key->tag.dvalue, link->storage[i-1]->tag.dvalue) < 0 )){
         link->storage[i] = link->storage[i-1];
         --i;
     } link->storage[i] = key;
@@ -163,7 +195,7 @@ int search_or_create_dtag(
     int mid;
     while ( low <= top ){
         mid = ((unsigned int)low + (unsigned int)top) >> 1;
-        int cmp = fcmp(key_dvalue,link->storage[mid]->tag.dvalue);
+        double cmp = dcmp(key_dvalue, link->storage[mid]->tag.dvalue);
         if ( cmp == 0 )
             return mid;
         if ( cmp < 0 )
@@ -188,7 +220,7 @@ int search_or_create_stag(
     int mid;
     while ( low <= top ){
         mid = ((unsigned int)low + (unsigned int)top) >> 1;
-        int cmp = strcmp(key_svalue, link->storage[mid]->tag.svalue);
+        double cmp = strcmp(key_svalue, link->storage[mid]->tag.svalue);
         if ( cmp == 0 )
             return mid;
         if ( cmp < 0 )
@@ -199,6 +231,134 @@ int search_or_create_stag(
 
     //otherwise create new tag and return it 
     return create_stag(colgen, link, linker);
+}
+
+void tlink_tlinker(t_colgen* colgen, dbconfig* database)
+{
+    assert(colgen);
+
+    t_link *link = colgen->_link;
+    t_colgen *linker = colgen->_linker;
+
+    char str[50] = { 0 }; //holds data for printing
+
+    int i = search_or_create_dtag(
+              colgen,
+              link, 
+              linker, 
+              linker->_template->dvalue); //key_dvalue
+
+    int j = create_xtvalue(
+                colgen, 
+                link->storage[i],
+                &search_or_create_dstorage);
+
+    if ( j == -1 )
+        strcpy(str, "(NULL)");
+    else
+        sprintf(str, colgen->format_data, link->storage[i]->store_dvalue[j], colgen->decimals);
+
+
+    fprintf(database->out_stream, "%s%c",
+        str,
+        colgen->delim
+    );
+}
+
+void tlink_dllinker(t_colgen* colgen, dbconfig* database)
+{
+    assert(colgen);
+
+    t_link *link = colgen->_link;
+    t_colgen *linker = colgen->_linker;
+
+    char str[50] = { 0 }; //holds data for printing
+
+    int i = search_or_create_dtag(
+              colgen,
+              link, 
+              linker, 
+              linker->_lindex->dvalue); //key_dvalue
+
+    int j = create_xtvalue(
+                colgen, 
+                link->storage[i],
+                &search_or_create_dstorage);
+
+    if ( j == -1 )
+        strcpy(str, "(NULL)");
+    else
+        sprintf(str, colgen->format_data, link->storage[i]->store_dvalue[j], colgen->decimals);
+
+
+    fprintf(database->out_stream, "%s%c",
+        str,
+        colgen->delim
+    );
+}
+
+void tlink_sllinker(t_colgen* colgen, dbconfig* database)
+{
+    assert(colgen);
+
+    t_link *link = colgen->_link;
+    t_colgen *linker = colgen->_linker;
+
+    char str[50] = { 0 }; //holds data for printing
+
+    int i = search_or_create_stag(
+              colgen,
+              link, 
+              linker, 
+              linker->_lindex->svalue); //key_svalue
+
+    int j = create_xtvalue(
+                colgen, 
+                link->storage[i],
+                &search_or_create_dstorage);
+
+    if ( j == -1 )
+        strcpy(str, "(NULL)");
+    else
+        sprintf(str, colgen->format_data, link->storage[i]->store_dvalue[j], colgen->decimals);
+
+
+    fprintf(database->out_stream, "%s%c",
+        str,
+        colgen->delim
+    );
+}
+
+void dllink_tlinker(t_colgen* colgen, dbconfig* database)
+{
+    assert(colgen);
+
+    t_link *link = colgen->_link;
+    t_colgen *linker = colgen->_linker;
+
+    char str[50] = { 0 }; //holds data for printing
+
+    int i = search_or_create_dtag(
+              colgen,
+              link, 
+              linker, 
+              linker->_template->dvalue); //key_dvalue
+
+    int j = create_xlvalue(
+                colgen, 
+                link->storage[i],
+                &search_or_create_dstorage);
+
+    if ( j == -1 )
+        strcpy(str, "(NULL)");
+    else
+        sprintf(str, colgen->format_data, link->storage[i]->store_dvalue[j], colgen->decimals);
+
+
+    fprintf(database->out_stream, "%s%c",
+        str,
+        colgen->delim
+    );
 }
 
 void sllink_tlinker(t_colgen* colgen, dbconfig* database)
@@ -216,7 +376,7 @@ void sllink_tlinker(t_colgen* colgen, dbconfig* database)
               linker, 
               linker->_template->dvalue); //key_svalue
 
-    int j = create_xvalue(
+    int j = create_xlvalue(
                 colgen, 
                 link->storage[i],
                 &search_or_create_sstorage);
@@ -228,6 +388,70 @@ void sllink_tlinker(t_colgen* colgen, dbconfig* database)
 
 
     fprintf(database->out_stream, colgen->format_data,
+        str,
+        colgen->delim
+    );
+}
+
+void dllink_dllinker(t_colgen* colgen, dbconfig* database)
+{
+    assert(colgen);
+
+    t_link *link = colgen->_link;
+    t_colgen *linker = colgen->_linker;
+
+    char str[50] = { 0 }; //holds data for printing
+
+    int i = search_or_create_dtag(
+              colgen,
+              link, 
+              linker, 
+              linker->_lindex->dvalue); //key_dvalue
+
+    int j = create_xlvalue(
+                colgen, 
+                link->storage[i],
+                &search_or_create_dstorage);
+
+    if ( j == -1 )
+        strcpy(str, "(NULL)");
+    else
+        sprintf(str, colgen->format_data, link->storage[i]->store_dvalue[j], colgen->decimals);
+
+
+    fprintf(database->out_stream, "%s%c",
+        str,
+        colgen->delim
+    );
+}
+
+void dllink_sllinker(t_colgen* colgen, dbconfig* database)
+{
+    assert(colgen);
+
+    t_link *link = colgen->_link;
+    t_colgen *linker = colgen->_linker;
+
+    char str[50] = { 0 }; //holds data for printing
+
+    int i = search_or_create_stag(
+              colgen,
+              link, 
+              linker, 
+              linker->_lindex->svalue); //key_svalue
+
+    int j = create_xlvalue(
+                colgen, 
+                link->storage[i],
+                &search_or_create_dstorage);
+
+    if ( j == -1 )
+        strcpy(str, "(NULL)");
+    else
+        sprintf(str, colgen->format_data, link->storage[i]->store_dvalue[j], colgen->decimals);
+
+
+    fprintf(database->out_stream, "%s%c",
         str,
         colgen->delim
     );
@@ -248,7 +472,7 @@ void sllink_sllinker(t_colgen* colgen, dbconfig* database)
               linker, 
               linker->_lindex->svalue); //key_svalue
 
-    int j = create_xvalue(
+    int j = create_xlvalue(
                 colgen, 
                 link->storage[i],
                 &search_or_create_sstorage);
@@ -366,31 +590,32 @@ void filesetter_arrlist(t_data** arrlist, t_colgen* colgen)
     FILE *f_read = fopen(colgen->file, "r");
     assert(f_read);
 
-    const int LEN = 50;
+    const int len = 50;
 
-    char ptr_str[LEN];
+    char ptr_str[len];
     
     size_t i = 1;
-    while ( (fgets(ptr_str, LEN-1, f_read)) && (i <= colgen->amt_row) ){
+    while ( (fgets(ptr_str, len-1, f_read)) && (i <= colgen->amt_row) ){
         arrlist[colgen->amt_row-i]->svalue = strndup(ptr_str, strlen(ptr_str)-1);
         assert(arrlist[colgen->amt_row-i]->svalue);
 
         ++i;
     }
 
-    // if _lindex is null then it's values are incremental,
-    // and each value shall only appear once,
-    // making linking impossible
-    if ( colgen->gentype & Link ){
-        if ( colgen->_linker->gentype & List ){ // linker is list
-            if ( colgen->_linker->gentype & File ) //linker is sl (string list )
-                colgen->fn = &sllink_sllinker;
-        } else { // linker is template
-            colgen->fn = &sllink_tlinker;
-        }
-    } else { // is ordinary colgen (not linked)
+    if ( !( colgen->gentype & Link ) ){ // colgen is not linked
         colgen->fn = &slist_random;
+    } else { // is colgen linked to another colgen
+        if ( !colgen->_linker->_lindex ) //linker is incremental
+            colgen->fn = &slist_random;
+        else if ( colgen->_linker->gentype & File ) //linker is sl (string list )
+                colgen->fn = &sllink_sllinker;
+        else // linker is template
+            colgen->fn = &sllink_tlinker;
     }
+
+    // if linker->_lindex is null then it's values are incremental,
+    // and each value shall only appear once,
+    // rendering linking unecessary
 
     colgen->_lindex = arrlist[colgen->amt_row-1];
 
@@ -401,23 +626,32 @@ void numsetter_arrlist(t_data** arrlist, t_colgen* colgen)
 {
     if ( colgen->method & Scl )
         gen_scalable(arrlist,colgen);
-    else
+    else 
         gen_incremental(arrlist,colgen);
 
-    //no need to shuffle if method has Fixed elements or is Linked
-    if (( colgen->method & Rnd ) && !( colgen->method & ( Fix | Link )))
+    if ( colgen->method & Rnd )
         shuffle_arrlist(arrlist, colgen);
    
     colgen->_lindex = arrlist[colgen->amt_row-1];
-    /*
-    if ( colgen->gentype & Link ) 
-        colgen->fn = &dlist_link;
-    else*/if ( colgen->method & Fix )
-        colgen->fn = &dlist_random;
-    else {
-        colgen->fn = &dlist_incremental;
-        colgen->_lindex = NULL;
-        //no need to hold onto the value, since each will appear only once
+    
+    if ( !(colgen->gentype & Link) ){ //colgen is not linked
+        if ( colgen->method & Fix )
+            colgen->fn = &dlist_random;
+        else {
+            colgen->fn = &dlist_incremental;
+            colgen->_lindex = NULL; //is null because each value is free'd after print
+        }
+    } else { //colgen is linked
+        if ( colgen->_linker->gentype & List ){ //linker is slist
+            if ( !colgen->_linker->_lindex ) //linker is incremental
+                colgen->fn = &dlist_random;
+            else if ( colgen->_linker->gentype & File )
+                colgen->fn = &dllink_sllinker;
+            else
+                colgen->fn = &dllink_dllinker;
+        } else { //linker is template
+            colgen->fn = &dllink_tlinker;
+        }
     }
 }
 
@@ -474,10 +708,24 @@ void templ_random(t_colgen* colgen, dbconfig* database)
 
 void numsetter_templ(t_colgen* colgen, dbconfig* database)
 {
-    if ( colgen->method & Rnd )
-        colgen->fn = &templ_random;
-    else if ( colgen->method & Scl )
-        colgen->fn = &templ_scalable;
-    else
-        colgen->fn = &templ_incremental;
+    if ( !(colgen->gentype & Link) ){
+        if ( colgen->method & Rnd )
+            colgen->fn = &templ_random;
+        else if ( colgen->method & Scl )
+            colgen->fn = &templ_scalable;
+        else
+            colgen->fn = &templ_incremental;
+    } else {
+        if ( colgen->_linker->gentype & List ){ //linker is slist
+            if ( !colgen->_linker->_lindex ) //linker is incremental
+                colgen->fn = &templ_random;
+            else if ( colgen->_linker->gentype & File )
+                colgen->fn = &tlink_sllinker;
+            else
+                colgen->fn = &tlink_dllinker;
+        } else { //linker is template
+            colgen->fn = &tlink_tlinker;
+        }
+
+    }
 }

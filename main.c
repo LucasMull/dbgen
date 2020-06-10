@@ -23,10 +23,10 @@ int main(int argc, char *argv[])
     database.amt_cols += count_link_cols(info, info_amt_cols);
 
     t_colgen **arrcolgen = start_arrcolgen(info, &database);
-    //print_colinfo(info,info_amt_cols);
+    print_colinfo(info,info_amt_cols);
     clean_colinfo(info,info_amt_cols);
 
-    //print_arrcolgen(arrcolgen, database.amt_cols);
+    print_arrcolgen(arrcolgen, database.amt_cols);
     for ( unsigned int i = 0; i < database.amt_rows; ++i ){
         for ( unsigned short j = 0; j < database.amt_cols; ++j ){
             if ( arrcolgen[j]->fn ){
