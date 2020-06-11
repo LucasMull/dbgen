@@ -24,13 +24,16 @@ t_colinfo *parser(int argc, char *argv[], dbconfig *database);
 
 short count_colinfo(int, char *[]);
 
-void def_link(char*, t_colinfo*);
-void def_option(char*, t_colinfo*);
-void def_field(char*, t_colinfo*);
-void def_delim(char*, t_colinfo*);
+int def_link(char*[], t_colinfo*, dbconfig*);
+int def_option(char*[], t_colinfo*, dbconfig*);
+int def_field(char*[], t_colinfo*, dbconfig*);
+int def_delim(char*[], t_colinfo*, dbconfig*);
 
 char *continue_then_init( int(*)(int), char*, short*);
 
 void print_colinfo(t_colinfo*, short amt_info);
 void init_colinfo(t_colinfo*, short amt_info);
 void clean_colinfo(t_colinfo*, short amt_info);
+
+dbconfig *init_dbconfig();
+void destroy_dbconfig(dbconfig* database);

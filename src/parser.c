@@ -8,7 +8,8 @@ enum optype {
     Option=1, 
     Field=2, 
     Delim=4, 
-    Link=8
+    Link=8,
+    OutputStream=16
 };
 
 enum methodtype {
@@ -21,35 +22,31 @@ enum methodtype {
     Undef=0
 };
 
-static short parse_op(char *argv[], t_colinfo *info)
+static int parse_op(char *argv[], t_colinfo* info, dbconfig* database)
 {
     //lock makes sure that when consecutive linking, each link is
     //initialized before proceeding any to non-linkable columns
     static t_colinfo *lock = NULL;
 
-    void (*fn)(char*, t_colinfo*);
+    int (*fn)(char*[], t_colinfo*, dbconfig*);
     t_colinfo *info_ptr;
-    char *arg_ptr;
-    short op_type;
+    char **argv_ptr = argv;
 
     switch ( **argv ){
         case '-': // Option op
             info_ptr = info;
             fn = &def_option;
-            arg_ptr = (*argv)+1; //skips first char
-            op_type = Option;
+            *argv_ptr = (*argv)+1; //skips first char
             break;
         case '[': // Field op
             fn = &def_field;
             info_ptr = info;
-            arg_ptr = (*argv)+1;
-            op_type = Field;
+            *argv_ptr = (*argv)+1;
             break;
         case '/': // Delim op
             info_ptr = info;
             fn = &def_delim;
-            arg_ptr = (*argv)+1;
-            op_type = Delim;
+            *argv_ptr = (*argv)+1;
             break;
         case '~': // Link op
             if ( !lock ){ //if lock is inactive
@@ -57,43 +54,47 @@ static short parse_op(char *argv[], t_colinfo *info)
             } info_ptr = lock; //points to active linker
 
             fn = &def_link;
-            arg_ptr = *(argv+1); //skips current line
-            op_type = Link;
+            argv_ptr = argv+1; //skips current line
             break;
         default:
             _error(ERR_READ, *argv);
             exit(EXIT_FAILURE);
     }
-    (fn)(arg_ptr, info_ptr);
+    int optype = (fn)(argv_ptr, info_ptr, database);
     
     // resets lock if previous operation didn't involve linking
     if (( lock != info_ptr ) && ( lock )){
         lock = NULL;
     }
 
-    return op_type;
+    return optype;
 }
 
-static void op_select(int argc, char *argv[], t_colinfo *info)
+static void op_select(int argc, char *argv[], t_colinfo *info, dbconfig* database)
 {
     short i = 0;
     while(argc--)
     {
-        short op = parse_op(argv, info+i);
+        int optype = parse_op(argv, info+i, database);
 
-        switch ( op ){
-            case Link:
+        if ( optype & Link ){
+            ++argv;
+            --argc;
+        }
+        else if ( optype & Field ){
+            ++i;
+        }
+        else if ( optype & Option ){
+            if ( optype & OutputStream ){
                 ++argv;
                 --argc;
-                break;    
-            case Field:
-                ++i;
-                break;
-            case Delim: case Option:
-                break;
-            default:
-                _error(ERR_READ,"Invalid op");
-                exit(EXIT_FAILURE);
+            }
+        }
+        else if ( optype & Delim ){
+        } //not used for now
+        else {
+            _error(ERR_READ,"Invalid op");
+            exit(EXIT_FAILURE);
         }
         ++argv;
     }
@@ -115,10 +116,9 @@ t_colinfo *parser(int argc, char *argv[], dbconfig* database)
     t_colinfo *info = malloc(amt_cols * sizeof(t_colinfo));
 
     init_colinfo(info, amt_cols);
-    op_select(argc, argv, info);
+    op_select(argc, argv, info, database);
 
-    if ( database )
-        database->amt_cols = amt_cols;
+    database->amt_cols = amt_cols;
 
     return info;
 }
@@ -179,9 +179,9 @@ void clean_colinfo(t_colinfo* info, short amt_cols)
     free(info);
 }
 
-void def_link(char str[], t_colinfo *info)
+int def_link(char *argv[], t_colinfo *info, dbconfig* database)
 {
-    if ( *str != '[' ){
+    if ( **argv != '[' ){
         _error(ERR_READ,"can't specify linked column options");
         exit(EXIT_FAILURE);
     }
@@ -197,20 +197,21 @@ void def_link(char str[], t_colinfo *info)
     init_colinfo(ptr_next, 1);
     ptr_next->option |= Lnk;
 
-    char **arg = malloc(sizeof(char*));
-    *arg = str;
+    parse_op(argv, ptr_next, database);
 
-    parse_op(arg, ptr_next);
-
-    free(arg);
+    return Link;
 }
 
-void def_option(char str[], t_colinfo *info)
+int def_option(char *argv[], t_colinfo *info, dbconfig* database)
 {
-    short i = 0;
+    short i, j;
     short new_option = Undef;
+    char *str_ptr;
+    int optype = Undef;
+
+    i = 0;
     do {
-       switch ( str[i] ){
+       switch ( (*argv)[i] ){
             case 'r':
                 new_option |= Rnd; 
                 break;
@@ -220,14 +221,38 @@ void def_option(char str[], t_colinfo *info)
             case 's':
                 new_option |= Scl;
                 break;
+            case 'o':
+                str_ptr = *(argv+1);
+                if ( access( str_ptr, W_OK ) == 0 ){
+                    _error("FILE ALREADY EXISTS -- ", str_ptr);
+                    exit(EXIT_FAILURE);
+                }
+                database->out_stream = fopen(str_ptr, "w"); 
+                optype |= OutputStream;
+                break;
+            case 'S':
+                str_ptr = *(argv+1);
+                j = 0;
+                while ( str_ptr[j] ){
+                    if ( !isdigit(str_ptr[j]) ){
+                        _error("INVALID NUMBER FOR SIZE -- ", str_ptr);
+                        exit(EXIT_FAILURE);
+                    }
+                    ++j;
+                }
+                database->amt_rows = strtol(str_ptr,NULL,10);
+                optype |= OutputStream;
+                break;
             default:
-                _error(ERR_READ, str+i);
+                _error(ERR_READ, *(argv+i));
                 exit(EXIT_FAILURE);
        }
        ++i;
-    } while ( str[i] );
+    } while ( (*argv)[i] );
     
     info->option |= new_option;
+    
+    return ( optype | Option );
 }
 
 char *continue_then_init( int(*fn)(int), char *src, short *i)
@@ -255,12 +280,12 @@ char *continue_then_init( int(*fn)(int), char *src, short *i)
     return NULL;
 }
 
-static void add_decimals(char str[], t_colinfo *info, short *i)
+static void add_decimals(char *argv[], t_colinfo *info, short *i)
 {
-    if ( str[*i] == '.' ){
+    if ( (*argv)[*i] == '.' ){
         ++(*i); //skip dot
 
-        char *leftover = continue_then_init(&isdigit, str, i);
+        char *leftover = continue_then_init(&isdigit, *argv, i);
         info->decimals = strlen( leftover );
         info->lwall = realloc(info->lwall, info->decimals+(*i));
 
@@ -272,24 +297,24 @@ static void add_decimals(char str[], t_colinfo *info, short *i)
     }
 }
 
-void def_field(char str[], t_colinfo *info)
+int def_field(char *argv[], t_colinfo *info, dbconfig* database)
 {
     short i = 0;
     short j;
-    while ( str[i] != ']' ){
-       switch ( str[i] ){
+    while ( (*argv)[i] != ']' ){
+       switch ( (*argv)[i] ){
             case '-':
                 j = 0;
-                info->lwall = continue_then_init(&isdigit, str, &j);
-                add_decimals(str, info, &j);
+                info->lwall = continue_then_init(&isdigit, *argv, &j);
+                add_decimals(argv, info, &j);
 
                 ++i; // skip hyphen
 
-                info->rwall = continue_then_init(&isdigit, str, &i); 
-                if ( str[i] == '.' ){
+                info->rwall = continue_then_init(&isdigit, *argv, &i); 
+                if ( (*argv)[i] == '.' ){
                     ++i; //skip dot
 
-                    char *leftover = continue_then_init(&isdigit, str, &i);
+                    char *leftover = continue_then_init(&isdigit, *argv, &i);
                     if ( info->decimals < strlen(leftover) ){
                         info->decimals = strlen(leftover);
                     }
@@ -305,11 +330,11 @@ void def_field(char str[], t_colinfo *info)
             case ',':
                 ++i; // skip comma
 
-                info->amount = continue_then_init(&isdigit, str, &i); 
+                info->amount = continue_then_init(&isdigit, *argv, &i); 
                 info->option |= Fix;
                 break;
             default:
-                if ( ! isgraph(str[i]) ){
+                if ( ! isgraph((*argv)[i]) ){
                     _error(ERR_READ,"missing ']' terminator");
                     exit(EXIT_FAILURE);
                 }
@@ -327,22 +352,24 @@ void def_field(char str[], t_colinfo *info)
             trim -= strlen(info->amount)+1;
         }
 
-        info->file = strndup(str, trim);
+        info->file = strndup(*argv, trim);
         if ( access( info->file, R_OK ) == -1 ){
             _error(ERR_FILE, info->file);
             exit(EXIT_FAILURE);
         }
     }
+
+    return Field;
 }
 
-void def_delim(char str[], t_colinfo *info)
+int def_delim(char *argv[], t_colinfo *info, dbconfig* database)
 {
-    if ( strlen(str) != 1 ){
-        _error(ERR_READ, str);
+    if ( strlen(*argv) != 1 ){
+        _error(ERR_READ, *argv);
         exit(EXIT_FAILURE);
     }
 
-    switch (str[0]){
+    switch (**argv){
         case 's': 
             info->delim = ' ';
             break;
@@ -351,10 +378,37 @@ void def_delim(char str[], t_colinfo *info)
             break;
         case '\"': case '\'': case '|' : 
         case '/' : case ';' :
-            info->delim = str[0];
+            info->delim = **argv;
             break;
         default:
-            _error(ERR_READ, str);
+            _error(ERR_READ, *argv);
             exit(EXIT_FAILURE);
     }
+
+    return Delim;
 }
+
+dbconfig *init_dbconfig()
+{
+    const dbconfig default_database = {
+        .amt_rows = 10, 
+        .delim = ',', 
+        .buffer = {0}, 
+        .amt_cols = 0,
+        .out_stream = stdout
+    };
+    
+    dbconfig *new_database = malloc(sizeof(dbconfig));
+    *new_database = default_database;
+
+    return new_database;
+}
+
+void destroy_dbconfig(dbconfig* database)
+{
+    assert(database);
+    if (database->out_stream != stdout)
+        fclose(database->out_stream);
+    free(database);
+}
+
