@@ -112,30 +112,34 @@ t_colinfo *parser(int argc, char *argv[], dbconfig* database)
         ++argv;
     }
 
-    short amt_cols = count_colinfo(argc, argv);
+    short amt_cols = 0, amt_links = 0;
+    count_colinfo(argc, argv, &amt_cols, &amt_links);
+
     t_colinfo *info = malloc(amt_cols * sizeof(t_colinfo));
 
     init_colinfo(info, amt_cols);
     op_select(argc, argv, info, database);
 
-    database->amt_cols = amt_cols;
+    database->amt_cols = amt_cols + amt_links;
 
     return info;
 }
 
-short count_colinfo(int argc, char *argv[])
+void count_colinfo(int argc, char *argv[], short *amt_cols, short *amt_links)
 {
-    short amt_cols = 0;
+    *amt_cols = 0;
+    *amt_links = 0;
+
     while ( argc-- ){
         if (strchr(*argv,'[') && strchr(*argv,']')){
-            ++amt_cols;
+            ++(*amt_cols);
         }    
         else if (( **argv == '~' ) && ( strlen(*argv) == 1 )){
-            --amt_cols;
+            --(*amt_cols);
+            ++(*amt_links);
         }
         ++argv;
     } 
-    return amt_cols;
 }
 
 void print_colinfo(t_colinfo* info, short amt_cols)
@@ -145,6 +149,7 @@ void print_colinfo(t_colinfo* info, short amt_cols)
 
         t_colinfo *ptr_link = (info+i)->link;
         while ( ptr_link ){
+            --amt_cols;
             fprintf(stderr, "\toption: %d\n\tfile: %s\n\trange: %s-%s\n\tamount: %s\n\tdelim: %c\n\tdecimals: %d\n\tlink: %p\n\n",ptr_link->option, ptr_link->file, ptr_link->lwall, ptr_link->rwall, ptr_link->amount, ptr_link->delim, ptr_link->decimals, (void*)ptr_link->link);
 
             ptr_link = ptr_link->link;
@@ -162,19 +167,32 @@ void init_colinfo(t_colinfo* info, short amt_cols)
     }
 }
 
-void clean_colinfo(t_colinfo* info, short amt_cols)
+void clean_colinfo(t_colinfo* info)
+{
+    if (info->lwall)
+        free(info->lwall);
+    if (info->rwall)
+        free(info->rwall);
+    if (info->amount)
+        free(info->amount);
+    if (info->file)
+        free(info->file);
+}
+
+void destroy_colinfo(t_colinfo* info, short amt_cols)
 {
     for ( short i = 0; i < amt_cols; ++i ){
-        if((info+i)->lwall)
-            free((info+i)->lwall);
-        if((info+i)->rwall)
-            free((info+i)->rwall);
-        if((info+i)->amount)
-            free((info+i)->amount);
-        if((info+i)->file)
-            free((info+i)->file);
-        if((info+i)->link)
-            clean_colinfo((info+i)->link, 1);
+        clean_colinfo(info+i);
+        if ((info+i)->link){
+            t_colinfo* prev_link = (info+i)->link;
+            t_colinfo* next_link = prev_link->link;
+            while ( prev_link ){
+                --amt_cols;
+                clean_colinfo(prev_link);
+                free(prev_link);
+                prev_link = next_link;
+            }
+        }
     }
     free(info);
 }

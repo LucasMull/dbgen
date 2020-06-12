@@ -22,7 +22,7 @@ typedef struct colinfo {
 
 t_colinfo *parser(int argc, char *argv[], dbconfig *database);
 
-short count_colinfo(int, char *[]);
+void count_colinfo(int, char *[], short*, short*);
 
 int def_link(char*[], t_colinfo*, dbconfig*);
 int def_option(char*[], t_colinfo*, dbconfig*);
@@ -33,7 +33,8 @@ char *continue_then_init( int(*)(int), char*, short*);
 
 void print_colinfo(t_colinfo*, short amt_info);
 void init_colinfo(t_colinfo*, short amt_info);
-void clean_colinfo(t_colinfo*, short amt_info);
+void clean_colinfo(t_colinfo*);
+void destroy_colinfo(t_colinfo*, short amt_info);
 
 dbconfig *init_dbconfig();
 void destroy_dbconfig(dbconfig* database);
