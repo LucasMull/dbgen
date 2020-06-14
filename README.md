@@ -2,7 +2,7 @@
 ### database generator cli utility tool
 
 ## SYNOPSIS
-      dbgen [OPTION]... [DELIM]... [FIELD]... [LINK]...
+      dbgen [OPTION]... [DELIM]... [FIELD]... [COMPOSITE_KEY]...
 
 ## DESCRIPTION
       (WIP)
@@ -53,18 +53,29 @@
             will generate unique values from 1000 to 3000, that scale
             proportionally to the database size, and are randomly arranged
 
-## LINK
-     A field may be linked to another field (aka the linker), meaning that
-     the linked field holds a dependency on the output of the linker. For each value input by
-     the linker, each corresponding value input by the linked field must be unique to that particular
-     linker's value. For example, if the linker inputs a value of "John" and the linked proceeds with
-     a value of "1234", the value "1234" becomes unavailable for every proceeding input of "John",
-     rendering each value that's input by the linked field, unique to that particular linker value.
+## COMPOSITE_KEY
+     A field may have it's entities attached to another field's entities,
+     meaning that no entity occurrence (table row) may be duplicated.
 
-     \~     
-        will link the field to the right of the symbol with the leftmost (not linked to any) column
+     A field may receive many attachments from different fields, but each is treated as a unique composite key, for example:
+
+     dbgen [FIELD1] \~ [FIELD2] \~ [FIELD3]
+
+     The resulting keys will be FIELD1_FIELD2 and FIELD1_FIELD3, which is different from a chain FIELD1_FIELD2_FIELD3 (field2 attach to field1 and field3 attach to field2).
+
+     Each entity inserted by FIELD2 and FIELD3 will be unique to the
+     FIELD1's entity, if there are no possible unique entities for
+     insertion, NULL will be output instead.
+     
+     The attachment always occurs to the leftmost non-composite key, and a composite key may never attach to another composite key.
+
+
+     \~
+        will attach the field at the right side the symbol, to the leftmost non-composite field
 
      Examples:
         
-        dbgen [data.txt] \~ [100-500]
-                links values from range 100-500 to the values of data.txt,
+        dbgen [data.txt] \~ [100-500] \~ [users.txt]
+                creates a composite key of data.txt and numbers from a
+                range of 100-500, and creates a composite key of data.txt
+                and user.txt
