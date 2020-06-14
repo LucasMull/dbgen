@@ -67,11 +67,11 @@
      FIELD1's entity, if there are no possible unique entities for
      insertion, NULL will be output instead.
      
-     The attachment always occurs to the leftmost non-composite key, and a composite key may never attach to another composite key.
+     The attachment always occurs to the leftmost not-attached field, and a composite key may never attach to another composite key.
 
 
      \~
-        will attach the field at the right side the symbol, to the leftmost non-composite field
+        will attach the field at the right side of the symbol, to the leftmost not-attached field
 
      Examples:
         
