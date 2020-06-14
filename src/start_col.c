@@ -5,7 +5,7 @@ enum gentype {
     Template=1, 
     List=2,
     File=4,
-    Link=8
+    UniqueKey=8
 };
 
 enum methodtype { 
@@ -15,35 +15,34 @@ enum methodtype {
     Fix=8,
     Lnk=16,
 
-    TotalMethods=3,
     Undef=0
 };
 
-t_data *init_data()
+t_entity *init_entity()
 {
-    t_data *new_data = malloc(sizeof(t_data));
-    assert(new_data);
+    t_entity *new_entity = malloc(sizeof(t_entity));
+    assert(new_entity);
 
-    const t_data default_data = { NULL };
-    *new_data = default_data;
+    const t_entity default_entity = { NULL };
+    *new_entity = default_entity;
 
-    return new_data;
+    return new_entity;
 }
 
 void start_arrlist(t_colgen *colgen, dbconfig *database)
 {
     assert(!colgen->_list);
 
-    t_data **new_arrlist = malloc(colgen->amt_row * sizeof(t_data*));
+    t_entity **new_arrlist = malloc(colgen->amt_row * sizeof(t_entity*));
     assert(new_arrlist);
 
     for ( int i = 0; i < colgen->amt_row; ++i )
-        new_arrlist[i] = init_data();
+        new_arrlist[i] = init_entity();
 
     colgen->_list = new_arrlist;
 }
 
-void destroy_list(t_data* list, t_colgen* colgen)
+void destroy_list(t_entity* list, t_colgen* colgen)
 {
     assert(list);
 
@@ -54,7 +53,7 @@ void destroy_list(t_data* list, t_colgen* colgen)
     } free(list);
 }
 
-void destroy_arrlist(t_data** arrlist, t_colgen* colgen)
+void destroy_arrlist(t_entity** arrlist, t_colgen* colgen)
 {
     assert(arrlist);
 
@@ -63,7 +62,7 @@ void destroy_arrlist(t_data** arrlist, t_colgen* colgen)
     } free(arrlist);
 }
 
-void start_templ(t_colgen* colgen, t_data* new_templ, dbconfig* database)
+void start_templ(t_colgen* colgen, t_entity* new_templ, dbconfig* database)
 {
     assert(new_templ);
     assert(!colgen->_template);
@@ -73,7 +72,7 @@ void start_templ(t_colgen* colgen, t_data* new_templ, dbconfig* database)
     colgen->_template = new_templ;
 }
 
-void destroy_templ(t_data *templ)
+void destroy_templ(t_entity *templ)
 {
     assert(templ);
 
@@ -91,17 +90,17 @@ linkstorage *init_linkstorage()
     return new_storage;
 }
 
-linkstorage *start_linkstorage(t_colgen* linker, t_colgen* colgen, linkstorage* new_storage)
+linkstorage *start_linkstorage(t_colgen* dependency, t_colgen* colgen, linkstorage* new_storage)
 {
-    assert(linker);
+    assert(dependency);
 
-    if (( linker->gentype & List ) && ( linker->_lindex )){
-        if ( linker->gentype & File )
-            new_storage->tag.svalue = linker->_lindex->svalue;
+    if (( dependency->gentype & List ) && ( dependency->_curr_entity )){
+        if ( dependency->gentype & File )
+            new_storage->tag.svalue = dependency->_curr_entity->svalue;
         else
-            new_storage->tag.dvalue = linker->_lindex->dvalue;
+            new_storage->tag.dvalue = dependency->_curr_entity->dvalue;
     } else { //then it's a template
-        new_storage->tag.dvalue = linker->_template->dvalue;
+        new_storage->tag.dvalue = dependency->_template->dvalue;
     }
 
     return new_storage;
@@ -118,36 +117,36 @@ void destroy_linkstorage(linkstorage* storage, const int gentype)
     } free(storage);
 }
 
-t_link *init_link()
+t_ukey *init_ukey()
 {
-    t_link *new_link = malloc(sizeof(t_link));
-    assert(new_link);
+    t_ukey *new_ukey = malloc(sizeof(t_ukey));
+    assert(new_ukey);
 
-    const t_link default_link = { NULL };
-    *new_link = default_link;
+    const t_ukey default_ukey = { NULL };
+    *new_ukey = default_ukey;
 
-    return new_link;
+    return new_ukey;
 }
 
-void start_link(t_colgen *colgen, t_colgen *linker, t_link *new_link, dbconfig *database)
+void start_ukey(t_colgen *colgen, t_colgen *dependency, t_ukey *new_ukey, dbconfig *database)
 {
-    assert(new_link);
-    new_link->storage = malloc(sizeof(linkstorage*));
-    assert(new_link->storage);
+    assert(new_ukey);
+    new_ukey->storage = malloc(sizeof(linkstorage*));
+    assert(new_ukey->storage);
 
-    colgen->_linker = linker;
-    colgen->_link = new_link;
+    colgen->_dependency = dependency;
+    colgen->_ukey = new_ukey;
 }
 
-void destroy_link(t_link *link, const int gentype)
+void destroy_ukey(t_ukey *ukey, const int gentype)
 {
-    assert(link);
+    assert(ukey);
 
-    if ( link->storage ){
-        for ( unsigned int i = 0; i < link->n_amt ; ++i )
-            destroy_linkstorage(link->storage[i], gentype);
-        free(link->storage);
-    } free(link);
+    if ( ukey->storage ){
+        for ( unsigned int i = 0; i < ukey->n_amt ; ++i ){
+            destroy_linkstorage(ukey->storage[i], gentype);
+        } free(ukey->storage);
+    } free(ukey);
 }
 
 static void def_typeof(t_colinfo *info, t_colgen *colgen)
@@ -155,7 +154,7 @@ static void def_typeof(t_colinfo *info, t_colgen *colgen)
     assert(info);
     assert(colgen);
 
-    short new_method = info->option;
+    short new_method = info->method;
     short new_gentype = Undef;
    
     /*
@@ -173,7 +172,7 @@ static void def_typeof(t_colinfo *info, t_colgen *colgen)
         new_gentype = Template; 
 
     if ( new_method & Lnk )
-        new_gentype |= Link;
+        new_gentype |= UniqueKey;
 
     colgen->method = new_method;
     colgen->gentype = new_gentype;
@@ -186,9 +185,9 @@ t_colgen *init_colgen(dbconfig* database)
 
     //everything else is set to NULL value
     const t_colgen default_colgen = { 
-        .rwall = database->amt_rows,
+        .rwall = database->amt_row,
         .delim = database->delim,
-        .amt_row = database->amt_rows
+        .amt_row = database->amt_row
     };
 
     *new_colgen = default_colgen;
@@ -226,7 +225,7 @@ static void def_fn(t_colgen* colgen, dbconfig* database)
     }
 }
 
-t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, t_colgen *linker, dbconfig* database)
+t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, t_colgen *dependency, dbconfig* database)
 {
     if ( info->file ){
         colgen->file = strdup(info->file);
@@ -235,49 +234,51 @@ t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, t_colgen *linker, dbco
             colgen->lwall = strtod(info->lwall, NULL);
         if ( info->rwall )
             colgen->rwall = strtod(info->rwall, NULL);
-    }
+    } // can be generate either file or range of numbers
 
     if ( info->delim )
         colgen->delim = info->delim;
-    if ( info->decimals )
-        colgen->decimals = info->decimals;
+
+    if ( info->decimal_places )
+        colgen->decimal_places = info->decimal_places;
 
 
     def_typeof(info, colgen);
 
-    if (( colgen->method & Fix ) && ( atoi(info->amount) >= database->amt_rows )){
+
+    if (( colgen->method & Fix ) && ( atoi(info->amount) >= database->amt_row )){
         colgen->method ^= Fix; //can't have fixed amt be >= dbsize
         colgen->gentype = Template; //and shouldn't be a list
     }
 
+    if ( colgen->gentype & File )
+        colgen->amt_row = count_flines(colgen->file);
+    else if (( colgen->method & Fix ) && ( atoi(info->amount) < database->amt_row ))
+        colgen->amt_row = atoi(info->amount);
+    else if (( colgen->rwall - colgen->lwall ) < database->amt_row )
+        colgen->amt_row = colgen->rwall - colgen->lwall;
     /*
-     * if type is of file-list type and random method then it is necessary to
+     * if is of file type and random method then it is necessary to
      * fetch the entire file into memory
      * (otherwise random elements scope would be limited to default db size)
      * else if designated amount to be generated is lower than default db size
      * else if range is lower than default dbsize, assign rante as amt
      */
-    if ( colgen->gentype & File )
-        colgen->amt_row = count_flines(colgen->file);
-    else if ( colgen->method & Fix )
-        colgen->amt_row = atoi(info->amount);
-    else if (( colgen->rwall - colgen->lwall ) < database->amt_rows )
-        colgen->amt_row = colgen->rwall - colgen->lwall;
 
 
     if ( colgen->gentype & File )
-        sprintf(colgen->format_data,"%%s%%c");
+        sprintf(colgen->format_entity,"%%s%%c");
     else
-        sprintf(colgen->format_data,"%%.%df%%c",colgen->decimals);
+        sprintf(colgen->format_entity,"%%.%df%%c",colgen->decimal_places);
 
 
     if ( colgen->gentype & List )
         start_arrlist(colgen, database);
     else if ( colgen->gentype & Template )
-        start_templ(colgen, init_data(), database);
+        start_templ(colgen, init_entity(), database);
 
-    if ( colgen->gentype & Link )
-        start_link(colgen, linker, init_link(), database);
+    if ( colgen->gentype & UniqueKey )
+        start_ukey(colgen, dependency, init_ukey(), database);
 
 
     def_fn(colgen, database);
@@ -286,71 +287,78 @@ t_colgen *start_colgen(t_colinfo* info, t_colgen* colgen, t_colgen *linker, dbco
     return colgen;
 }
 
+int start_ukey_colgen(t_colgen** new_arrcolgen, t_colgen* dependency, t_colinfo* ptr_ukey, dbconfig* database)
+{
+    int j = 0;
+
+    while ( ptr_ukey ){
+        ++j;
+
+        new_arrcolgen[j] = start_colgen(ptr_ukey, init_colgen(database), dependency, database);
+
+        ptr_ukey = ptr_ukey->ukey;
+    }
+
+    return j;
+}
+
 t_colgen **start_arrcolgen(t_colinfo *info, dbconfig* database)
 {
     assert(info);
 
-    t_colgen **new_arrcolgen = malloc(database->amt_cols * sizeof(t_colgen*));
+    t_colgen **new_arrcolgen = malloc(database->amt_col * sizeof(t_colgen*));
     assert(new_arrcolgen);
 
     int j = 0; //iterate through, and add to, colgen index
     int i = 0; //iterate through colinfo index
-    while ( j < database->amt_cols ){
+    while ( j < database->amt_col ){ //j will be greater than i if there are ukeys
         new_arrcolgen[j] = start_colgen(info+i, init_colgen(database), NULL, database); 
 
-        if ( (info+i)->link ){
-            int linker_index = j; //hold onto the linker index
-            t_colinfo *ptr_link = (info+i)->link;
-            while ( ptr_link ){
-                ++j;
-
-                new_arrcolgen[j] = start_colgen(ptr_link, init_colgen(database), new_arrcolgen[linker_index], database);
-
-                ptr_link = ptr_link->link;
-            }
+        if ( (info+i)->ukey ){ //adds amount of ukeys to j
+            j += start_ukey_colgen(new_arrcolgen+j, new_arrcolgen[j], (info+i)->ukey, database);
         }
         
-        if ( i < database->amt_cols ){
+        if ( i < database->amt_col ){
             ++i;        
         } ++j;
     }
     // makes sure last col will not have delim and will jump line
-    new_arrcolgen[database->amt_cols-1]->delim = '\n';
+    new_arrcolgen[database->amt_col-1]->delim = '\n';
 
     return new_arrcolgen;
 }
 
-void print_arrlist(size_t amt_rows, t_data **arrlist, short gentype)
+void print_arrlist(size_t amt_row, t_entity **arrlist, short gentype)
 {
     assert(arrlist);
     
     for ( int i = 0; i < 5; ++i ){
-        if ( gentype == File )
+        if ( gentype & File )
             fprintf(stderr, "\t# %s\n", arrlist[i]->svalue);
         else
             fprintf(stderr, "\t# %f\n", arrlist[i]->dvalue);
     } fputc('\n', stderr);
-    fprintf(stderr, "\tand %d more ...\n",abs(amt_rows-5));
+    fprintf(stderr, "\tand %d more ...\n",abs(amt_row-5));
 }
 
-void print_templ(t_data *templ)
+void print_templ(t_entity *templ)
 {
     assert(templ);
 
     fprintf(stderr, "\tvalue: %f\n", templ->dvalue);
 }
 
-void print_arrcolgen(t_colgen **colgen, int amt_cols)
+void print_arrcolgen(t_colgen **colgen, int amt_col)
 {
     assert(colgen);
 
-    for ( int i = 0; i < amt_cols; ++i ){
-        fprintf(stderr, "n#: %d\nmethod: %d\namt_row: %d\ndelim: %c\ndecimals: %d\n", i+1, colgen[i]->method, colgen[i]->amt_row, colgen[i]->delim, colgen[i]->decimals);
+    for ( int i = 0; i < amt_col; ++i ){
+        fprintf(stderr, "n#: %d\nmethod: %d\namt_row: %d\ndelim: %c\ndecimal_places: %d\n", i+1, colgen[i]->method, colgen[i]->amt_row, colgen[i]->delim, colgen[i]->decimal_places);
         
-        char gentype[15] = { 0 }; 
-        if ( colgen[i]->gentype & Link ){
-            fprintf(stderr,"linker: %p\n", (void*)colgen[i]->_linker);
-            strcpy(gentype,"Link");
+        char gentype[50] = { 0 }; 
+        if ( colgen[i]->gentype & UniqueKey ){
+            fprintf(stderr,"dependency: %p\n", (void*)colgen[i]->_dependency);
+            strcpy(gentype,"UniqueKey");
         }
         if ( colgen[i]->gentype & File ){
             fprintf(stderr,"file: %s\n", colgen[i]->file);
@@ -383,17 +391,17 @@ void destroy_colgen(t_colgen *colgen)
         destroy_templ(colgen->_template);
     }
 
-    if ( colgen->gentype & Link )
-        destroy_link(colgen->_link, colgen->gentype);
+    if ( colgen->gentype & UniqueKey )
+        destroy_ukey(colgen->_ukey, colgen->gentype);
     
     free(colgen);
 }
 
-void destroy_arrcolgen(t_colgen **arrcolgen, int amt_cols)
+void destroy_arrcolgen(t_colgen **arrcolgen, int amt_col)
 {
     assert(arrcolgen);
 
-    for ( int i = 0; i < amt_cols; ++i ){
+    for ( int i = 0; i < amt_col; ++i ){
         destroy_colgen(arrcolgen[i]);
     } free (arrcolgen);
 }

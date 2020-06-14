@@ -8,8 +8,8 @@ enum optype {
     Option=1, 
     Field=2, 
     Delim=4, 
-    Link=8,
-    OutputStream=16
+    UniqueKey=8,
+    NextArg=16
 };
 
 enum methodtype {
@@ -35,7 +35,7 @@ static int parse_op(char *argv[], t_colinfo* info, dbconfig* database)
     switch ( **argv ){
         case '-': // Option op
             info_ptr = info;
-            fn = &def_option;
+            fn = &def_method;
             *argv_ptr = (*argv)+1; //skips first char
             break;
         case '[': // Field op
@@ -48,12 +48,12 @@ static int parse_op(char *argv[], t_colinfo* info, dbconfig* database)
             fn = &def_delim;
             *argv_ptr = (*argv)+1;
             break;
-        case '~': // Link op
+        case '~': // UniqueKey op
             if ( !lock ){ //if lock is inactive
                 lock = info-1; //points lock to linker's index
             } info_ptr = lock; //points to active linker
 
-            fn = &def_link;
+            fn = &def_ukey;
             argv_ptr = argv+1; //skips current line
             break;
         default:
@@ -77,7 +77,7 @@ static void op_select(int argc, char *argv[], t_colinfo *info, dbconfig* databas
     {
         int optype = parse_op(argv, info+i, database);
 
-        if ( optype & Link ){
+        if ( optype & UniqueKey ){
             ++argv;
             --argc;
         }
@@ -85,7 +85,7 @@ static void op_select(int argc, char *argv[], t_colinfo *info, dbconfig* databas
             ++i;
         }
         else if ( optype & Option ){
-            if ( optype & OutputStream ){
+            if ( optype & NextArg ){
                 ++argv;
                 --argc;
             }
@@ -112,57 +112,57 @@ t_colinfo *parser(int argc, char *argv[], dbconfig* database)
         ++argv;
     }
 
-    short amt_cols = 0, amt_links = 0;
-    count_colinfo(argc, argv, &amt_cols, &amt_links);
+    short amt_col = 0, amt_ukey = 0;
+    count_colinfo(argc, argv, &amt_col, &amt_ukey);
 
-    t_colinfo *info = malloc(amt_cols * sizeof(t_colinfo));
+    t_colinfo *info = malloc(amt_col * sizeof(t_colinfo));
 
-    init_colinfo(info, amt_cols);
+    init_colinfo(info, amt_col);
     op_select(argc, argv, info, database);
 
-    database->amt_cols = amt_cols + amt_links;
+    database->amt_col = amt_col + amt_ukey;
 
     return info;
 }
 
-void count_colinfo(int argc, char *argv[], short *amt_cols, short *amt_links)
+void count_colinfo(int argc, char *argv[], short *amt_col, short *amt_ukey)
 {
-    *amt_cols = 0;
-    *amt_links = 0;
+    *amt_col = 0;
+    *amt_ukey = 0;
 
     while ( argc-- ){
         if (strchr(*argv,'[') && strchr(*argv,']')){
-            ++(*amt_cols);
+            ++(*amt_col);
         }    
         else if (( **argv == '~' ) && ( strlen(*argv) == 1 )){
-            --(*amt_cols);
-            ++(*amt_links);
+            --(*amt_col);
+            ++(*amt_ukey);
         }
         ++argv;
     } 
 }
 
-void print_colinfo(t_colinfo* info, short amt_cols)
+void print_colinfo(t_colinfo* info, short amt_col)
 {
-    for ( short i = 0; i < amt_cols; ++i ){
-        fprintf(stderr, "\noption: %d\nfile: %s\nrange: %s-%s\namount: %s\ndelim: %c\ndecimals: %d\nlink: %p\n\n",(info+i)->option, (info+i)->file, (info+i)->lwall, (info+i)->rwall, (info+i)->amount, (info+i)->delim, (info+i)->decimals, (void*)(info+i)->link);
+    for ( short i = 0; i < amt_col; ++i ){
+        fprintf(stderr, "\nmethod: %d\nfile: %s\nrange: %s-%s\namount: %s\ndelim: %c\ndecimal_places: %d\nukey: %p\n\n",(info+i)->method, (info+i)->file, (info+i)->lwall, (info+i)->rwall, (info+i)->amount, (info+i)->delim, (info+i)->decimal_places, (void*)(info+i)->ukey);
 
-        t_colinfo *ptr_link = (info+i)->link;
-        while ( ptr_link ){
-            --amt_cols;
-            fprintf(stderr, "\toption: %d\n\tfile: %s\n\trange: %s-%s\n\tamount: %s\n\tdelim: %c\n\tdecimals: %d\n\tlink: %p\n\n",ptr_link->option, ptr_link->file, ptr_link->lwall, ptr_link->rwall, ptr_link->amount, ptr_link->delim, ptr_link->decimals, (void*)ptr_link->link);
+        t_colinfo *ptr_ukey = (info+i)->ukey;
+        while ( ptr_ukey ){
+            --amt_col;
+            fprintf(stderr, "\tmethod: %d\n\tfile: %s\n\trange: %s-%s\n\tamount: %s\n\tdelim: %c\n\tdecimal_places: %d\n\tukey: %p\n\n",ptr_ukey->method, ptr_ukey->file, ptr_ukey->lwall, ptr_ukey->rwall, ptr_ukey->amount, ptr_ukey->delim, ptr_ukey->decimal_places, (void*)ptr_ukey->ukey);
 
-            ptr_link = ptr_link->link;
+            ptr_ukey = ptr_ukey->ukey;
         }
     }
 }
 
-void init_colinfo(t_colinfo* info, short amt_cols)
+void init_colinfo(t_colinfo* info, short amt_col)
 {
     //every other member set to NULL value
     const t_colinfo default_colinfo = { 0 };
 
-    for ( short i = 0; i < amt_cols; ++i ){
+    for ( short i = 0; i < amt_col; ++i ){
         info[i] = default_colinfo;
     }
 }
@@ -179,51 +179,51 @@ void clean_colinfo(t_colinfo* info)
         free(info->file);
 }
 
-void destroy_colinfo(t_colinfo* info, short amt_cols)
+void destroy_colinfo(t_colinfo* info, short amt_col)
 {
-    for ( short i = 0; i < amt_cols; ++i ){
+    for ( short i = 0; i < amt_col; ++i ){
         clean_colinfo(info+i);
-        if ((info+i)->link){
-            t_colinfo* prev_link = (info+i)->link;
-            t_colinfo* next_link = prev_link->link;
-            while ( prev_link ){
-                --amt_cols;
-                clean_colinfo(prev_link);
-                free(prev_link);
-                prev_link = next_link;
+        if ((info+i)->ukey){
+            t_colinfo* prev_ukey = (info+i)->ukey;
+            t_colinfo* next_ukey = prev_ukey->ukey;
+            while ( prev_ukey ){
+                --amt_col;
+                clean_colinfo(prev_ukey);
+                free(prev_ukey);
+                prev_ukey = next_ukey;
             }
         }
     }
     free(info);
 }
 
-int def_link(char *argv[], t_colinfo *info, dbconfig* database)
+int def_ukey(char *argv[], t_colinfo *info, dbconfig* database)
 {
     if ( **argv != '[' ){
-        _error(ERR_READ,"can't specify linked column options");
+        _error(ERR_READ,"missing '[' field's delimiter");
         exit(EXIT_FAILURE);
     }
 
     t_colinfo *ptr_prev = info;
-    t_colinfo *ptr_next = info->link;
+    t_colinfo *ptr_next = info->ukey;
     while (ptr_next){
-        ptr_prev = ptr_prev->link;
-        ptr_next = ptr_next->link;
+        ptr_prev = ptr_prev->ukey;
+        ptr_next = ptr_next->ukey;
     } ptr_next = malloc(sizeof(t_colinfo));
-    ptr_prev->link = ptr_next;    
+    ptr_prev->ukey = ptr_next;    
 
     init_colinfo(ptr_next, 1);
-    ptr_next->option |= Lnk;
+    ptr_next->method |= Lnk;
 
     parse_op(argv, ptr_next, database);
 
-    return Link;
+    return UniqueKey;
 }
 
-int def_option(char *argv[], t_colinfo *info, dbconfig* database)
+int def_method(char *argv[], t_colinfo *info, dbconfig* database)
 {
     short i, j;
-    short new_option = Undef;
+    short new_method = Undef;
     char *str_ptr;
     int optype = Undef;
 
@@ -231,13 +231,13 @@ int def_option(char *argv[], t_colinfo *info, dbconfig* database)
     do {
        switch ( (*argv)[i] ){
             case 'r':
-                new_option |= Rnd; 
+                new_method |= Rnd; 
                 break;
             case 'u':
-                new_option |= Unq;
+                new_method |= Unq;
                 break;
             case 's':
-                new_option |= Scl;
+                new_method |= Scl;
                 break;
             case 'o':
                 str_ptr = *(argv+1);
@@ -246,7 +246,7 @@ int def_option(char *argv[], t_colinfo *info, dbconfig* database)
                     exit(EXIT_FAILURE);
                 }
                 database->out_stream = fopen(str_ptr, "w"); 
-                optype |= OutputStream;
+                optype |= NextArg;
                 break;
             case 'S':
                 str_ptr = *(argv+1);
@@ -258,8 +258,8 @@ int def_option(char *argv[], t_colinfo *info, dbconfig* database)
                     }
                     ++j;
                 }
-                database->amt_rows = strtol(str_ptr,NULL,10);
-                optype |= OutputStream;
+                database->amt_row = strtol(str_ptr,NULL,10);
+                optype |= NextArg;
                 break;
             default:
                 _error(ERR_READ, *(argv+i));
@@ -268,7 +268,7 @@ int def_option(char *argv[], t_colinfo *info, dbconfig* database)
        ++i;
     } while ( (*argv)[i] );
     
-    info->option |= new_option;
+    info->method |= new_method;
     
     return ( optype | Option );
 }
@@ -298,14 +298,14 @@ char *continue_then_init( int(*fn)(int), char *src, short *i)
     return NULL;
 }
 
-static void add_decimals(char *argv[], t_colinfo *info, short *i)
+static void add_decimal_places(char *argv[], t_colinfo *info, short *i)
 {
     if ( (*argv)[*i] == '.' ){
         ++(*i); //skip dot
 
         char *leftover = continue_then_init(&isdigit, *argv, i);
-        info->decimals = strlen( leftover );
-        info->lwall = realloc(info->lwall, info->decimals+(*i));
+        info->decimal_places = strlen( leftover );
+        info->lwall = realloc(info->lwall, info->decimal_places+(*i));
 
         if ( leftover ){
             strcat( info->lwall, "." );
@@ -324,7 +324,7 @@ int def_field(char *argv[], t_colinfo *info, dbconfig* database)
             case '-':
                 j = 0;
                 info->lwall = continue_then_init(&isdigit, *argv, &j);
-                add_decimals(argv, info, &j);
+                add_decimal_places(argv, info, &j);
 
                 ++i; // skip hyphen
 
@@ -333,10 +333,10 @@ int def_field(char *argv[], t_colinfo *info, dbconfig* database)
                     ++i; //skip dot
 
                     char *leftover = continue_then_init(&isdigit, *argv, &i);
-                    if ( info->decimals < strlen(leftover) ){
-                        info->decimals = strlen(leftover);
+                    if ( info->decimal_places < strlen(leftover) ){
+                        info->decimal_places = strlen(leftover);
                     }
-                    info->rwall = realloc(info->rwall, info->decimals+i);
+                    info->rwall = realloc(info->rwall, info->decimal_places+i);
 
                     if ( leftover ){
                         strcat( info->rwall, "." );
@@ -349,7 +349,7 @@ int def_field(char *argv[], t_colinfo *info, dbconfig* database)
                 ++i; // skip comma
 
                 info->amount = continue_then_init(&isdigit, *argv, &i); 
-                info->option |= Fix;
+                info->method |= Fix;
                 break;
             default:
                 if ( ! isgraph((*argv)[i]) ){
@@ -363,7 +363,7 @@ int def_field(char *argv[], t_colinfo *info, dbconfig* database)
 
     //if no range found then must be a file
     if ( !info->lwall || !info->rwall ){
-        info->decimals = 0; //resets to default value
+        info->decimal_places = 0; //resets to default value
         short trim = i; //trim string if a comma is found
 
         if ( info->amount ){
@@ -409,10 +409,9 @@ int def_delim(char *argv[], t_colinfo *info, dbconfig* database)
 dbconfig *init_dbconfig()
 {
     const dbconfig default_database = {
-        .amt_rows = 10, 
+        .amt_row = 10, 
         .delim = ',', 
-        .buffer = {0}, 
-        .amt_cols = 0,
+        .amt_col = 0,
         .out_stream = stdout
     };
     

@@ -5,7 +5,7 @@ enum gentype {
     Template=1, 
     List=2,
     File=4,
-    Link=8
+    UniqueKey=8
 };
 
 enum methodtype { 
@@ -20,7 +20,7 @@ double dcmp(const double num1, const double num2)
     return num1 - num2;
 }
 
-int create_dstorage(linkstorage* storage, t_data* list)
+int create_dstorage(linkstorage* storage, t_entity* list)
 {
     ++storage->n_amt;
     storage->store_dvalue = realloc(storage->store_dvalue, storage->n_amt * sizeof(char*));
@@ -37,7 +37,7 @@ int create_dstorage(linkstorage* storage, t_data* list)
     return i;
 }
 
-int create_sstorage(linkstorage* storage, t_data* list)
+int create_sstorage(linkstorage* storage, t_entity* list)
 {
     ++storage->n_amt;
     storage->store_svalue = realloc(storage->store_svalue, storage->n_amt * sizeof(char*));
@@ -54,7 +54,7 @@ int create_sstorage(linkstorage* storage, t_data* list)
     return i;
 }
 
-int search_or_create_dstorage(linkstorage* storage, t_data* list)
+int search_or_create_dstorage(linkstorage* storage, t_entity* list)
 {
     int top = storage->n_amt-1;
     int low = 0;
@@ -63,7 +63,7 @@ int search_or_create_dstorage(linkstorage* storage, t_data* list)
         mid = ((unsigned int)low + (unsigned int)top) >> 1;
         double cmp = dcmp(list->dvalue, storage->store_dvalue[mid]);
         if ( cmp == 0 )
-            return -1; //can't link that value if it already exists
+            return -1; //can't ukey that value if it already exists
         if ( cmp < 0 )
             top = mid-1;
         else
@@ -73,7 +73,7 @@ int search_or_create_dstorage(linkstorage* storage, t_data* list)
     return create_dstorage(storage, list);
 }
 
-int search_or_create_sstorage(linkstorage* storage, t_data* list)
+int search_or_create_sstorage(linkstorage* storage, t_entity* list)
 {
     int top = storage->n_amt-1;
     int low = 0;
@@ -82,7 +82,7 @@ int search_or_create_sstorage(linkstorage* storage, t_data* list)
         mid = ((unsigned int)low + (unsigned int)top) >> 1;
         double cmp = strcmp(list->svalue, storage->store_svalue[mid]);
         if ( cmp == 0 )
-            return -1; //can't link that value if it already exists
+            return -1; //can't ukey that value if it already exists
         if ( cmp < 0 )
             top = mid-1;
         else
@@ -95,7 +95,7 @@ int search_or_create_sstorage(linkstorage* storage, t_data* list)
 int create_xlvalue(
     t_colgen* colgen, 
     linkstorage* storage,
-    int (*storage_fn)(linkstorage*, t_data*) )
+    int (*storage_fn)(linkstorage*, t_entity*) )
 {
     assert(storage);
 
@@ -123,7 +123,7 @@ int create_xlvalue(
 int create_xtvalue(
     t_colgen* colgen, 
     linkstorage* storage,
-    int (*storage_fn)(linkstorage*, t_data*) )
+    int (*storage_fn)(linkstorage*, t_entity*) )
 {
     assert(storage);
     
@@ -149,53 +149,53 @@ int create_xtvalue(
     return -1; //can't assign new values
 }
 
-int create_dtag(t_colgen* colgen, t_link* link, t_colgen* linker)
+int create_dtag(t_colgen* colgen, t_ukey* ukey, t_colgen* dependency)
 {
-    ++link->n_amt;
-    link->storage = realloc(link->storage, link->n_amt * sizeof(linkstorage*));
-    link->storage[link->n_amt-1] = start_linkstorage(linker, colgen, init_linkstorage()); 
+    ++ukey->n_amt;
+    ukey->storage = realloc(ukey->storage, ukey->n_amt * sizeof(linkstorage*));
+    ukey->storage[ukey->n_amt-1] = start_linkstorage(dependency, colgen, init_linkstorage()); 
 
 
-    linkstorage* key = link->storage[link->n_amt-1];
-    int i = link->n_amt-1;
-    while (( i > 0 ) && ( dcmp(key->tag.dvalue, link->storage[i-1]->tag.dvalue) < 0 )){
-        link->storage[i] = link->storage[i-1];
+    linkstorage* key = ukey->storage[ukey->n_amt-1];
+    int i = ukey->n_amt-1;
+    while (( i > 0 ) && ( dcmp(key->tag.dvalue, ukey->storage[i-1]->tag.dvalue) < 0 )){
+        ukey->storage[i] = ukey->storage[i-1];
         --i;
-    } link->storage[i] = key;
+    } ukey->storage[i] = key;
     
     return i;
 }
 
-int create_stag(t_colgen* colgen, t_link* link, t_colgen* linker)
+int create_stag(t_colgen* colgen, t_ukey* ukey, t_colgen* dependency)
 {
-    ++link->n_amt;
-    link->storage = realloc(link->storage, link->n_amt * sizeof(linkstorage*));
-    link->storage[link->n_amt-1] = start_linkstorage(linker, colgen, init_linkstorage()); 
+    ++ukey->n_amt;
+    ukey->storage = realloc(ukey->storage, ukey->n_amt * sizeof(linkstorage*));
+    ukey->storage[ukey->n_amt-1] = start_linkstorage(dependency, colgen, init_linkstorage()); 
 
 
-    linkstorage* key = link->storage[link->n_amt-1];
-    int i = link->n_amt-1;
-    while (( i > 0 ) && ( strcmp(key->tag.svalue, link->storage[i-1]->tag.svalue) < 0 )){
-        link->storage[i] = link->storage[i-1];
+    linkstorage* key = ukey->storage[ukey->n_amt-1];
+    int i = ukey->n_amt-1;
+    while (( i > 0 ) && ( strcmp(key->tag.svalue, ukey->storage[i-1]->tag.svalue) < 0 )){
+        ukey->storage[i] = ukey->storage[i-1];
         --i;
-    } link->storage[i] = key;
+    } ukey->storage[i] = key;
     
     return i;
 }
 
 int search_or_create_dtag(
     t_colgen* colgen, 
-    t_link* link, 
-    t_colgen* linker, 
+    t_ukey* ukey, 
+    t_colgen* dependency, 
     double key_dvalue )
 {
     //check and return tag if already exists
-    int top = link->n_amt-1;
+    int top = ukey->n_amt-1;
     int low = 0;
     int mid;
     while ( low <= top ){
         mid = ((unsigned int)low + (unsigned int)top) >> 1;
-        double cmp = dcmp(key_dvalue, link->storage[mid]->tag.dvalue);
+        double cmp = dcmp(key_dvalue, ukey->storage[mid]->tag.dvalue);
         if ( cmp == 0 )
             return mid;
         if ( cmp < 0 )
@@ -205,22 +205,22 @@ int search_or_create_dtag(
     }
 
     //otherwise create new tag and return it 
-    return create_dtag(colgen, link, linker);
+    return create_dtag(colgen, ukey, dependency);
 }
 
 int search_or_create_stag(
     t_colgen* colgen, 
-    t_link* link, 
-    t_colgen* linker, 
+    t_ukey* ukey, 
+    t_colgen* dependency, 
     char* key_svalue )
 {
     //check and return tag if already exists
-    int top = link->n_amt-1;
+    int top = ukey->n_amt-1;
     int low = 0;
     int mid;
     while ( low <= top ){
         mid = ((unsigned int)low + (unsigned int)top) >> 1;
-        double cmp = strcmp(key_svalue, link->storage[mid]->tag.svalue);
+        double cmp = strcmp(key_svalue, ukey->storage[mid]->tag.svalue);
         if ( cmp == 0 )
             return mid;
         if ( cmp < 0 )
@@ -230,33 +230,33 @@ int search_or_create_stag(
     }
 
     //otherwise create new tag and return it 
-    return create_stag(colgen, link, linker);
+    return create_stag(colgen, ukey, dependency);
 }
 
-void tlink_tlinker(t_colgen* colgen, dbconfig* database)
+void tukey_tdependency(t_colgen* colgen, dbconfig* database)
 {
     assert(colgen);
 
-    t_link *link = colgen->_link;
-    t_colgen *linker = colgen->_linker;
+    t_ukey *ukey = colgen->_ukey;
+    t_colgen *dependency = colgen->_dependency;
 
-    char str[50] = { 0 }; //holds data for printing
+    char str[50] = { 0 }; //holds entity for printing
 
     int i = search_or_create_dtag(
               colgen,
-              link, 
-              linker, 
-              linker->_template->dvalue); //key_dvalue
+              ukey, 
+              dependency, 
+              dependency->_template->dvalue); //key_dvalue
 
     int j = create_xtvalue(
                 colgen, 
-                link->storage[i],
+                ukey->storage[i],
                 &search_or_create_dstorage);
 
     if ( j == -1 )
         strcpy(str, "(NULL)");
     else
-        sprintf(str, colgen->format_data, link->storage[i]->store_dvalue[j], colgen->decimals);
+        sprintf(str, colgen->format_entity, ukey->storage[i]->store_dvalue[j], colgen->decimal_places);
 
 
     fprintf(database->out_stream, "%s%c",
@@ -265,30 +265,30 @@ void tlink_tlinker(t_colgen* colgen, dbconfig* database)
     );
 }
 
-void tlink_dllinker(t_colgen* colgen, dbconfig* database)
+void tukey_dldependency(t_colgen* colgen, dbconfig* database)
 {
     assert(colgen);
 
-    t_link *link = colgen->_link;
-    t_colgen *linker = colgen->_linker;
+    t_ukey *ukey = colgen->_ukey;
+    t_colgen *dependency = colgen->_dependency;
 
-    char str[50] = { 0 }; //holds data for printing
+    char str[50] = { 0 }; //holds entity for printing
 
     int i = search_or_create_dtag(
               colgen,
-              link, 
-              linker, 
-              linker->_lindex->dvalue); //key_dvalue
+              ukey, 
+              dependency, 
+              dependency->_curr_entity->dvalue); //key_dvalue
 
     int j = create_xtvalue(
                 colgen, 
-                link->storage[i],
+                ukey->storage[i],
                 &search_or_create_dstorage);
 
     if ( j == -1 )
         strcpy(str, "(NULL)");
     else
-        sprintf(str, colgen->format_data, link->storage[i]->store_dvalue[j], colgen->decimals);
+        sprintf(str, colgen->format_entity, ukey->storage[i]->store_dvalue[j], colgen->decimal_places);
 
 
     fprintf(database->out_stream, "%s%c",
@@ -297,30 +297,30 @@ void tlink_dllinker(t_colgen* colgen, dbconfig* database)
     );
 }
 
-void tlink_sllinker(t_colgen* colgen, dbconfig* database)
+void tukey_sldependency(t_colgen* colgen, dbconfig* database)
 {
     assert(colgen);
 
-    t_link *link = colgen->_link;
-    t_colgen *linker = colgen->_linker;
+    t_ukey *ukey = colgen->_ukey;
+    t_colgen *dependency = colgen->_dependency;
 
-    char str[50] = { 0 }; //holds data for printing
+    char str[50] = { 0 }; //holds entity for printing
 
     int i = search_or_create_stag(
               colgen,
-              link, 
-              linker, 
-              linker->_lindex->svalue); //key_svalue
+              ukey, 
+              dependency, 
+              dependency->_curr_entity->svalue); //key_svalue
 
     int j = create_xtvalue(
                 colgen, 
-                link->storage[i],
+                ukey->storage[i],
                 &search_or_create_dstorage);
 
     if ( j == -1 )
         strcpy(str, "(NULL)");
     else
-        sprintf(str, colgen->format_data, link->storage[i]->store_dvalue[j], colgen->decimals);
+        sprintf(str, colgen->format_entity, ukey->storage[i]->store_dvalue[j], colgen->decimal_places);
 
 
     fprintf(database->out_stream, "%s%c",
@@ -329,30 +329,30 @@ void tlink_sllinker(t_colgen* colgen, dbconfig* database)
     );
 }
 
-void dllink_tlinker(t_colgen* colgen, dbconfig* database)
+void dlukey_tdependency(t_colgen* colgen, dbconfig* database)
 {
     assert(colgen);
 
-    t_link *link = colgen->_link;
-    t_colgen *linker = colgen->_linker;
+    t_ukey *ukey = colgen->_ukey;
+    t_colgen *dependency = colgen->_dependency;
 
-    char str[50] = { 0 }; //holds data for printing
+    char str[50] = { 0 }; //holds entity for printing
 
     int i = search_or_create_dtag(
               colgen,
-              link, 
-              linker, 
-              linker->_template->dvalue); //key_dvalue
+              ukey, 
+              dependency, 
+              dependency->_template->dvalue); //key_dvalue
 
     int j = create_xlvalue(
                 colgen, 
-                link->storage[i],
+                ukey->storage[i],
                 &search_or_create_dstorage);
 
     if ( j == -1 )
         strcpy(str, "(NULL)");
     else
-        sprintf(str, colgen->format_data, link->storage[i]->store_dvalue[j], colgen->decimals);
+        sprintf(str, colgen->format_entity, ukey->storage[i]->store_dvalue[j], colgen->decimal_places);
 
 
     fprintf(database->out_stream, "%s%c",
@@ -361,62 +361,62 @@ void dllink_tlinker(t_colgen* colgen, dbconfig* database)
     );
 }
 
-void sllink_tlinker(t_colgen* colgen, dbconfig* database)
+void slukey_tdependency(t_colgen* colgen, dbconfig* database)
 {
     assert(colgen);
 
-    t_link *link = colgen->_link;
-    t_colgen *linker = colgen->_linker;
+    t_ukey *ukey = colgen->_ukey;
+    t_colgen *dependency = colgen->_dependency;
 
-    char str[50] = { 0 }; //holds data for printing
+    char str[50] = { 0 }; //holds entity for printing
 
     int i = search_or_create_dtag(
               colgen,
-              link, 
-              linker, 
-              linker->_template->dvalue); //key_svalue
+              ukey, 
+              dependency, 
+              dependency->_template->dvalue); //key_svalue
 
     int j = create_xlvalue(
                 colgen, 
-                link->storage[i],
+                ukey->storage[i],
                 &search_or_create_sstorage);
 
     if ( j == -1 )
         strcpy(str, "(NULL)");
     else
-        strcpy(str, link->storage[i]->store_svalue[j]);
+        strcpy(str, ukey->storage[i]->store_svalue[j]);
 
 
-    fprintf(database->out_stream, colgen->format_data,
+    fprintf(database->out_stream, colgen->format_entity,
         str,
         colgen->delim
     );
 }
 
-void dllink_dllinker(t_colgen* colgen, dbconfig* database)
+void dlukey_dldependency(t_colgen* colgen, dbconfig* database)
 {
     assert(colgen);
 
-    t_link *link = colgen->_link;
-    t_colgen *linker = colgen->_linker;
+    t_ukey *ukey = colgen->_ukey;
+    t_colgen *dependency = colgen->_dependency;
 
-    char str[50] = { 0 }; //holds data for printing
+    char str[50] = { 0 }; //holds entity for printing
 
     int i = search_or_create_dtag(
               colgen,
-              link, 
-              linker, 
-              linker->_lindex->dvalue); //key_dvalue
+              ukey, 
+              dependency, 
+              dependency->_curr_entity->dvalue); //key_dvalue
 
     int j = create_xlvalue(
                 colgen, 
-                link->storage[i],
+                ukey->storage[i],
                 &search_or_create_dstorage);
 
     if ( j == -1 )
         strcpy(str, "(NULL)");
     else
-        sprintf(str, colgen->format_data, link->storage[i]->store_dvalue[j], colgen->decimals);
+        sprintf(str, colgen->format_entity, ukey->storage[i]->store_dvalue[j], colgen->decimal_places);
 
 
     fprintf(database->out_stream, "%s%c",
@@ -425,30 +425,30 @@ void dllink_dllinker(t_colgen* colgen, dbconfig* database)
     );
 }
 
-void dllink_sllinker(t_colgen* colgen, dbconfig* database)
+void dlukey_sldependency(t_colgen* colgen, dbconfig* database)
 {
     assert(colgen);
 
-    t_link *link = colgen->_link;
-    t_colgen *linker = colgen->_linker;
+    t_ukey *ukey = colgen->_ukey;
+    t_colgen *dependency = colgen->_dependency;
 
-    char str[50] = { 0 }; //holds data for printing
+    char str[50] = { 0 }; //holds entity for printing
 
     int i = search_or_create_stag(
               colgen,
-              link, 
-              linker, 
-              linker->_lindex->svalue); //key_svalue
+              ukey, 
+              dependency, 
+              dependency->_curr_entity->svalue); //key_svalue
 
     int j = create_xlvalue(
                 colgen, 
-                link->storage[i],
+                ukey->storage[i],
                 &search_or_create_dstorage);
 
     if ( j == -1 )
         strcpy(str, "(NULL)");
     else
-        sprintf(str, colgen->format_data, link->storage[i]->store_dvalue[j], colgen->decimals);
+        sprintf(str, colgen->format_entity, ukey->storage[i]->store_dvalue[j], colgen->decimal_places);
 
 
     fprintf(database->out_stream, "%s%c",
@@ -457,50 +457,50 @@ void dllink_sllinker(t_colgen* colgen, dbconfig* database)
     );
 }
 
-void sllink_sllinker(t_colgen* colgen, dbconfig* database)
+void slukey_sldependency(t_colgen* colgen, dbconfig* database)
 {
     assert(colgen);
 
-    t_link *link = colgen->_link;
-    t_colgen *linker = colgen->_linker;
+    t_ukey *ukey = colgen->_ukey;
+    t_colgen *dependency = colgen->_dependency;
 
-    char str[50] = { 0 }; //holds data for printing
+    char str[50] = { 0 }; //holds entity for printing
 
     int i = search_or_create_stag(
               colgen,
-              link, 
-              linker, 
-              linker->_lindex->svalue); //key_svalue
+              ukey, 
+              dependency, 
+              dependency->_curr_entity->svalue); //key_svalue
 
     int j = create_xlvalue(
                 colgen, 
-                link->storage[i],
+                ukey->storage[i],
                 &search_or_create_sstorage);
 
     if ( j == -1 )
         strcpy(str, "(NULL)");
     else
-        strcpy(str, link->storage[i]->store_svalue[j]);
+        strcpy(str, ukey->storage[i]->store_svalue[j]);
 
 
-    fprintf(database->out_stream, colgen->format_data,
+    fprintf(database->out_stream, colgen->format_entity,
         str,
         colgen->delim
     );
 }
 
 /*
- * Stores numbers proportionally to the scope (last - first) provided, by making use of a 'padding' tool
+ * Stores numbers proportionally to the range (last - first) provided, by making use of a 'padding' tool
  * ex: 1000 to 2000; amount of elements wanted = 5
  *
- * pad = scope / amount , which translates to 1000/5 = 200
+ * pad = range / amount , which translates to 1000/5 = 200
  * pad = 200 , means it will decrement from 2000 to 1000, 
  * lowering the value of the last element by 200 each run (last -= pad), until last <= first
  *
  * rand() used in each padding, from a range of last to last+pad makes sure each random number 
  * is unique, but also lower than the previous one
  */
-static void gen_scalable(t_data** arrlist, t_colgen* colgen)
+static void gen_scalable(t_entity** arrlist, t_colgen* colgen)
 {
     double last = colgen->rwall;
     double first = colgen->lwall;
@@ -515,7 +515,7 @@ static void gen_scalable(t_data** arrlist, t_colgen* colgen)
     }
 }
 
-static void gen_incremental(t_data** arrlist, t_colgen* colgen)
+static void gen_incremental(t_entity** arrlist, t_colgen* colgen)
 {
     double first = colgen->lwall;
     size_t amount = colgen->amt_row;
@@ -524,16 +524,16 @@ static void gen_incremental(t_data** arrlist, t_colgen* colgen)
         arrlist[amount-i]->dvalue = first + (i-1);
 }
 
-static void list_swap(t_data** ptr1, t_data** ptr2)
+static void list_swap(t_entity** ptr1, t_entity** ptr2)
 {
     assert( ptr1 && ptr1 );
 
-    t_data *temp_ptr = *ptr1;
+    t_entity *temp_ptr = *ptr1;
     *ptr1 = *ptr2;
     *ptr2 = temp_ptr;
 }
 
-static void shuffle_arrlist(t_data** arrlist, t_colgen* colgen)
+static void shuffle_arrlist(t_entity** arrlist, t_colgen* colgen)
 {
     for ( size_t i = 0 ; i < colgen->amt_row ; ++i ){ //shuffle
         list_swap( arrlist + i, arrlist + rand()%colgen->amt_row );
@@ -545,24 +545,24 @@ void dlist_random(t_colgen* colgen, dbconfig* database)
 {
     int i_rand = rand() % colgen->amt_row;
 
-    fprintf(database->out_stream, colgen->format_data,
+    fprintf(database->out_stream, colgen->format_entity,
         colgen->_list[i_rand]->dvalue,
         colgen->delim
     );
 
-    colgen->_lindex = colgen->_list[i_rand];
+    colgen->_curr_entity = colgen->_list[i_rand];
 }
 
 void slist_random(t_colgen* colgen, dbconfig* database)
 {
     int i_rand = rand() % colgen->amt_row;
 
-    fprintf(database->out_stream, colgen->format_data,
+    fprintf(database->out_stream, colgen->format_entity,
         colgen->_list[i_rand]->svalue,
         colgen->delim
     );
 
-    colgen->_lindex = colgen->_list[i_rand];
+    colgen->_curr_entity = colgen->_list[i_rand];
 }
 
 //will print in order
@@ -570,7 +570,7 @@ void dlist_incremental(t_colgen* colgen, dbconfig* database)
 {
     //frees current list(one use only) index
     if ( colgen->amt_row ){
-        fprintf(database->out_stream, colgen->format_data,
+        fprintf(database->out_stream, colgen->format_entity,
             colgen->_list[colgen->amt_row-1]->dvalue,
             colgen->delim
         );
@@ -585,7 +585,7 @@ void dlist_incremental(t_colgen* colgen, dbconfig* database)
 }
 
 
-void filesetter_arrlist(t_data** arrlist, t_colgen* colgen)
+void filesetter_arrlist(t_entity** arrlist, t_colgen* colgen)
 {
     FILE *f_read = fopen(colgen->file, "r");
     assert(f_read);
@@ -602,27 +602,27 @@ void filesetter_arrlist(t_data** arrlist, t_colgen* colgen)
         ++i;
     }
 
-    if ( !( colgen->gentype & Link ) ){ // colgen is not linked
+    if ( !( colgen->gentype & UniqueKey ) ){ // colgen is not ukeyed
         colgen->fn = &slist_random;
-    } else { // is colgen linked to another colgen
-        if ( !colgen->_linker->_lindex ) //linker is incremental
+    } else { // colgen is ukeyed to another colgen
+        if ( !colgen->_dependency->_curr_entity ) //dependency is incremental
             colgen->fn = &slist_random;
-        else if ( colgen->_linker->gentype & File ) //linker is sl (string list )
-                colgen->fn = &sllink_sllinker;
-        else // linker is template
-            colgen->fn = &sllink_tlinker;
+        else if ( colgen->_dependency->gentype & File ) //dependency is sl (string list )
+                colgen->fn = &slukey_sldependency;
+        else // dependency is template
+            colgen->fn = &slukey_tdependency;
     }
 
-    // if linker->_lindex is null then it's values are incremental,
+    // if dependency->_curr_entity is null then it's values are incremental,
     // and each value shall only appear once,
-    // rendering linking unecessary
+    // rendering ukeying unecessary
 
-    colgen->_lindex = arrlist[colgen->amt_row-1];
+    colgen->_curr_entity = arrlist[colgen->amt_row-1];
 
     fclose(f_read);
 }
 
-void numsetter_arrlist(t_data** arrlist, t_colgen* colgen)
+void numsetter_arrlist(t_entity** arrlist, t_colgen* colgen)
 {
     if ( colgen->method & Scl )
         gen_scalable(arrlist,colgen);
@@ -632,25 +632,25 @@ void numsetter_arrlist(t_data** arrlist, t_colgen* colgen)
     if ( colgen->method & Rnd )
         shuffle_arrlist(arrlist, colgen);
    
-    colgen->_lindex = arrlist[colgen->amt_row-1];
+    colgen->_curr_entity = arrlist[colgen->amt_row-1];
     
-    if ( !(colgen->gentype & Link) ){ //colgen is not linked
+    if ( !(colgen->gentype & UniqueKey) ){ //colgen is not linked
         if ( colgen->method & Fix )
             colgen->fn = &dlist_random;
         else {
             colgen->fn = &dlist_incremental;
-            colgen->_lindex = NULL; //is null because each value is free'd after print
+            colgen->_curr_entity = NULL; //is null because each value is free'd after print
         }
     } else { //colgen is linked
-        if ( colgen->_linker->gentype & List ){ //linker is slist
-            if ( !colgen->_linker->_lindex ) //linker is incremental
+        if ( colgen->_dependency->gentype & List ){ //dependency is slist
+            if ( !colgen->_dependency->_curr_entity ) //dependency is incremental
                 colgen->fn = &dlist_random;
-            else if ( colgen->_linker->gentype & File )
-                colgen->fn = &dllink_sllinker;
+            else if ( colgen->_dependency->gentype & File )
+                colgen->fn = &dlukey_sldependency;
             else
-                colgen->fn = &dllink_dllinker;
-        } else { //linker is template
-            colgen->fn = &dllink_tlinker;
+                colgen->fn = &dlukey_dldependency;
+        } else { //dependency is template
+            colgen->fn = &dlukey_tdependency;
         }
     }
 }
@@ -659,7 +659,7 @@ void templ_scalable(t_colgen* colgen, dbconfig* database)
 {
     double first = colgen->lwall;
     double last = colgen->rwall;
-    size_t amount = database->amt_rows;
+    size_t amount = database->amt_row;
     
     if ( colgen->_template->dvalue < last ){
         unsigned int pad = 2; 
@@ -673,7 +673,7 @@ void templ_scalable(t_colgen* colgen, dbconfig* database)
             colgen->_template->dvalue = last;
     }
 
-    fprintf(database->out_stream, colgen->format_data,
+    fprintf(database->out_stream, colgen->format_entity,
         colgen->_template->dvalue,
         colgen->delim
     );
@@ -686,7 +686,7 @@ void templ_incremental(t_colgen* colgen, dbconfig* database)
     if ( colgen->_template->dvalue < last )
         ++colgen->_template->dvalue;
 
-    fprintf(database->out_stream, colgen->format_data,
+    fprintf(database->out_stream, colgen->format_entity,
         colgen->_template->dvalue,
         colgen->delim
     );
@@ -700,7 +700,7 @@ void templ_random(t_colgen* colgen, dbconfig* database)
     size_t rnd = rand() % (size_t)(last - first);
     colgen->_template->dvalue = first + rnd; 
 
-    fprintf(database->out_stream, colgen->format_data,
+    fprintf(database->out_stream, colgen->format_entity,
         colgen->_template->dvalue,
         colgen->delim
     );
@@ -708,7 +708,7 @@ void templ_random(t_colgen* colgen, dbconfig* database)
 
 void numsetter_templ(t_colgen* colgen, dbconfig* database)
 {
-    if ( !(colgen->gentype & Link) ){
+    if ( !(colgen->gentype & UniqueKey) ){
         if ( colgen->method & Rnd )
             colgen->fn = &templ_random;
         else if ( colgen->method & Scl )
@@ -716,16 +716,26 @@ void numsetter_templ(t_colgen* colgen, dbconfig* database)
         else
             colgen->fn = &templ_incremental;
     } else {
-        if ( colgen->_linker->gentype & List ){ //linker is slist
-            if ( !colgen->_linker->_lindex ) //linker is incremental
+        if ( colgen->_dependency->gentype & List ){ //dependency is slist
+            if ( !colgen->_dependency->_curr_entity ) //dependency is incremental
                 colgen->fn = &templ_random;
-            else if ( colgen->_linker->gentype & File )
-                colgen->fn = &tlink_sllinker;
+            else if ( colgen->_dependency->gentype & File )
+                colgen->fn = &tukey_sldependency;
             else
-                colgen->fn = &tlink_dllinker;
-        } else { //linker is template
-            colgen->fn = &tlink_tlinker;
+                colgen->fn = &tukey_dldependency;
+        } else { //dependency is template
+            colgen->fn = &tukey_tdependency;
         }
+    }
+}
 
+void generate_database(t_colgen** arrcolgen, dbconfig* database)
+{
+    for ( unsigned int i = 0; i < database->amt_row; ++i ){
+        for ( unsigned short j = 0; j < database->amt_col; ++j ){
+            if ( arrcolgen[j]->fn ){
+                (arrcolgen[j]->fn)(arrcolgen[j], database);
+            }
+        }
     }
 }
