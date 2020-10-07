@@ -1,23 +1,25 @@
-#include "config.h"
-#include "dbgen.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "libdbgen.h"
 
 int main(int argc, char *argv[])
 {
-    dbconfig *database = init_dbconfig();
-    t_colinfo *info = parser(argc, argv, database);
-    t_colgen **arrcolgen = start_arrcolgen(info, database);
+    dbconfig *database = dbgen_init_dbconfig();
+    t_colinfo *info = dbgen_parser(argc, argv, database);
+    t_colgen **arrcolgen = dbgen_build_arrcolgen(info, database);
 
-    print_colinfo(info,database->amt_col);
+    dbgen_print_colinfo(info,database->amt_col);
 
-    destroy_colinfo(info,database->amt_col);
+    dbgen_destroy_colinfo(info,database->amt_col);
 
-    print_arrcolgen(arrcolgen, database->amt_col);
+    dbgen_print_arrcolgen(arrcolgen, database->amt_col);
 
-    generate_database(arrcolgen, database);
+    dbgen_generate_database(arrcolgen, database);
 
-    destroy_arrcolgen(arrcolgen, database->amt_col);    
+    dbgen_destroy_arrcolgen(arrcolgen, database->amt_col);    
 
-    destroy_dbconfig(database);
+    dbgen_destroy_dbconfig(database);
 
     return EXIT_SUCCESS;
 }

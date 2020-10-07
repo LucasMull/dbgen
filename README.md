@@ -1,17 +1,21 @@
 # dbgen
+
 ### database generator cli utility tool
 
 ## SYNOPSIS
+
       dbgen [OPTION]... [DELIM]... [FIELD]... [COMPOSITE_KEY]...
 
 ## DESCRIPTION
+
       (WIP)
 
 ## INSTALLING
-      (WIP) type sudo make install to build dbgen in your usr/local/bin
+
       type make to build dbgen in it's folder.
 
 ## OPTIONS
+
       -r
             random values from specified field file or range of numbers.
       -u      
@@ -20,7 +24,7 @@
             scale values proportionally to field's range of numbers (if specified).
       -S
             size of database
-            Ex: -S 1000 ; database of 1000 elements
+            Ex: -S 1000 ; database of 1000 entity's occurrences
       -o
             output stream
             ex: -o data.csv ; outputs database to data.csv
@@ -34,6 +38,7 @@
             delim of designated column will be any of the above chars
 
 ## FIELD
+
      Every field must be enclosed by square brackets, and can either assume 
      a range of numbers to be manipulated, or a file to have it's members 
      manipulated. 
@@ -54,6 +59,7 @@
             proportionally to the database size, and are randomly arranged
 
 ## COMPOSITE_KEY
+
      A field may have it's entities attached to another field's entities,
      meaning that no entity occurrence (table row) may be duplicated.
 

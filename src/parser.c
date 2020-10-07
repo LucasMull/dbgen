@@ -1,8 +1,13 @@
+#include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 #include <unistd.h> //access()
+#include <assert.h>
 
-#include "../config.h"
-#include "../dbgen.h"
+#include "libdbgen.h"
+
+/* @disclaimer this file will be completely remade using POSIX command, that's
+    why I didn't rework formatting */
 
 enum optype {
     Option=1, 
@@ -12,17 +17,8 @@ enum optype {
     NextArg=16
 };
 
-enum methodtype {
-    Rnd=1,
-    Unq=2,
-    Scl=4,
-    Fix=8, // amt of rows is defined after a comma
-    Lnk=16, // will be useful for fn start_colgen at start_col.c
-
-    Undef=0
-};
-
-static int parse_op(char *argv[], t_colinfo* info, dbconfig* database)
+static int
+dbgen_parse_op(char *argv[], t_colinfo* info, dbconfig* database)
 {
     //lock makes sure that when consecutive linking, each link is
     //initialized before proceeding any to non-linkable columns
@@ -35,17 +31,17 @@ static int parse_op(char *argv[], t_colinfo* info, dbconfig* database)
     switch ( **argv ){
         case '-': // Option op
             info_ptr = info;
-            fn = &def_method;
+            fn = &dbgen_def_method;
             *argv_ptr = (*argv)+1; //skips first char
             break;
         case '[': // Field op
-            fn = &def_field;
+            fn = &dbgen_def_field;
             info_ptr = info;
             *argv_ptr = (*argv)+1;
             break;
         case '/': // Delim op
             info_ptr = info;
-            fn = &def_delim;
+            fn = &dbgen_def_delim;
             *argv_ptr = (*argv)+1;
             break;
         case '~': // UniqueKey op
@@ -53,7 +49,7 @@ static int parse_op(char *argv[], t_colinfo* info, dbconfig* database)
                 lock = info-1; //points lock to linker's index
             } info_ptr = lock; //points to active linker
 
-            fn = &def_ukey;
+            fn = &dbgen_def_ukey;
             argv_ptr = argv+1; //skips current line
             break;
         default:
@@ -70,12 +66,13 @@ static int parse_op(char *argv[], t_colinfo* info, dbconfig* database)
     return optype;
 }
 
-static void op_select(int argc, char *argv[], t_colinfo *info, dbconfig* database)
+static void
+dbgen_op_select(int argc, char *argv[], t_colinfo *info, dbconfig* database)
 {
     short i = 0;
     while(argc--)
     {
-        int optype = parse_op(argv, info+i, database);
+        int optype = dbgen_parse_op(argv, info+i, database);
 
         if ( optype & UniqueKey ){
             ++argv;
@@ -100,7 +97,8 @@ static void op_select(int argc, char *argv[], t_colinfo *info, dbconfig* databas
     }
 }
 
-t_colinfo *parser(int argc, char *argv[], dbconfig* database)
+t_colinfo*
+dbgen_parser(int argc, char *argv[], dbconfig* database)
 {
     if (argc <= 1){
         _error(ERR_READ,"no argument given");
@@ -113,19 +111,20 @@ t_colinfo *parser(int argc, char *argv[], dbconfig* database)
     }
 
     short amt_col = 0, amt_ukey = 0;
-    count_colinfo(argc, argv, &amt_col, &amt_ukey);
+    dbgen_count_colinfo(argc, argv, &amt_col, &amt_ukey);
 
     t_colinfo *info = malloc(amt_col * sizeof(t_colinfo));
 
-    init_colinfo(info, amt_col);
-    op_select(argc, argv, info, database);
+    dbgen_init_colinfo(info, amt_col);
+    dbgen_op_select(argc, argv, info, database);
 
     database->amt_col = amt_col + amt_ukey;
 
     return info;
 }
 
-void count_colinfo(int argc, char *argv[], short *amt_col, short *amt_ukey)
+void
+dbgen_count_colinfo(int argc, char *argv[], short *amt_col, short *amt_ukey)
 {
     *amt_col = 0;
     *amt_ukey = 0;
@@ -142,7 +141,8 @@ void count_colinfo(int argc, char *argv[], short *amt_col, short *amt_ukey)
     } 
 }
 
-void print_colinfo(t_colinfo* info, short amt_col)
+void
+dbgen_print_colinfo(t_colinfo* info, short amt_col)
 {
     for ( short i = 0; i < amt_col; ++i ){
         fprintf(stderr, "\nmethod: %d\nfile: %s\nrange: %s-%s\namount: %s\ndelim: %c\ndecimal_places: %d\nukey: %p\n\n",(info+i)->method, (info+i)->file, (info+i)->lwall, (info+i)->rwall, (info+i)->amount, (info+i)->delim, (info+i)->decimal_places, (void*)(info+i)->ukey);
@@ -157,7 +157,8 @@ void print_colinfo(t_colinfo* info, short amt_col)
     }
 }
 
-void init_colinfo(t_colinfo* info, short amt_col)
+void
+dbgen_init_colinfo(t_colinfo* info, short amt_col)
 {
     //every other member set to NULL value
     const t_colinfo default_colinfo = { 0 };
@@ -167,7 +168,8 @@ void init_colinfo(t_colinfo* info, short amt_col)
     }
 }
 
-void clean_colinfo(t_colinfo* info)
+void
+dbgen_clean_colinfo(t_colinfo* info)
 {
     if (info->lwall)
         free(info->lwall);
@@ -179,16 +181,17 @@ void clean_colinfo(t_colinfo* info)
         free(info->file);
 }
 
-void destroy_colinfo(t_colinfo* info, short amt_col)
+void
+dbgen_destroy_colinfo(t_colinfo* info, short amt_col)
 {
     for ( short i = 0; i < amt_col; ++i ){
-        clean_colinfo(info+i);
+        dbgen_clean_colinfo(info+i);
         if ((info+i)->ukey){
             t_colinfo* prev_ukey = (info+i)->ukey;
             t_colinfo* next_ukey = prev_ukey->ukey;
             while ( prev_ukey ){
                 --amt_col;
-                clean_colinfo(prev_ukey);
+                dbgen_clean_colinfo(prev_ukey);
                 free(prev_ukey);
                 prev_ukey = next_ukey;
             }
@@ -197,7 +200,8 @@ void destroy_colinfo(t_colinfo* info, short amt_col)
     free(info);
 }
 
-int def_ukey(char *argv[], t_colinfo *info, dbconfig* database)
+int
+dbgen_def_ukey(char *argv[], t_colinfo *info, dbconfig* database)
 {
     if ( **argv != '[' ){
         _error(ERR_READ,"missing '[' field's delimiter");
@@ -212,32 +216,33 @@ int def_ukey(char *argv[], t_colinfo *info, dbconfig* database)
     } ptr_next = malloc(sizeof(t_colinfo));
     ptr_prev->ukey = ptr_next;    
 
-    init_colinfo(ptr_next, 1);
-    ptr_next->method |= Lnk;
+    dbgen_init_colinfo(ptr_next, 1);
+    ptr_next->method |= DBGEN_LINKING;
 
-    parse_op(argv, ptr_next, database);
+    dbgen_parse_op(argv, ptr_next, database);
 
     return UniqueKey;
 }
 
-int def_method(char *argv[], t_colinfo *info, dbconfig* database)
+int
+dbgen_def_method(char *argv[], t_colinfo *info, dbconfig* database)
 {
     short i, j;
-    short new_method = Undef;
+    short new_method = DBGEN_UNDEFINED;
     char *str_ptr;
-    int optype = Undef;
+    int optype = DBGEN_UNDEFINED;
 
     i = 0;
     do {
        switch ( (*argv)[i] ){
             case 'r':
-                new_method |= Rnd; 
+                new_method |= DBGEN_RANDOM; 
                 break;
             case 'u':
-                new_method |= Unq;
+                new_method |= DBGEN_UNIQUE;
                 break;
             case 's':
-                new_method |= Scl;
+                new_method |= DBGEN_SCALEABLE;
                 break;
             case 'o':
                 str_ptr = *(argv+1);
@@ -273,7 +278,8 @@ int def_method(char *argv[], t_colinfo *info, dbconfig* database)
     return ( optype | Option );
 }
 
-char *continue_then_init( int(*fn)(int), char *src, short *i)
+char*
+dbgen_continue_then_init( int(*fn)(int), char *src, short *i)
 {
     short j = 0;
     short *ptr_i = i;
@@ -298,12 +304,13 @@ char *continue_then_init( int(*fn)(int), char *src, short *i)
     return NULL;
 }
 
-static void add_decimal_places(char *argv[], t_colinfo *info, short *i)
+static void
+dbgen_add_decimal_places(char *argv[], t_colinfo *info, short *i)
 {
     if ( (*argv)[*i] == '.' ){
         ++(*i); //skip dot
 
-        char *leftover = continue_then_init(&isdigit, *argv, i);
+        char *leftover = dbgen_continue_then_init(&isdigit, *argv, i);
         info->decimal_places = strlen( leftover );
         info->lwall = realloc(info->lwall, info->decimal_places+(*i));
 
@@ -315,7 +322,8 @@ static void add_decimal_places(char *argv[], t_colinfo *info, short *i)
     }
 }
 
-int def_field(char *argv[], t_colinfo *info, dbconfig* database)
+int
+dbgen_def_field(char *argv[], t_colinfo *info, dbconfig* database)
 {
     short i = 0;
     short j;
@@ -323,16 +331,16 @@ int def_field(char *argv[], t_colinfo *info, dbconfig* database)
        switch ( (*argv)[i] ){
             case '-':
                 j = 0;
-                info->lwall = continue_then_init(&isdigit, *argv, &j);
-                add_decimal_places(argv, info, &j);
+                info->lwall = dbgen_continue_then_init(&isdigit, *argv, &j);
+                dbgen_add_decimal_places(argv, info, &j);
 
                 ++i; // skip hyphen
 
-                info->rwall = continue_then_init(&isdigit, *argv, &i); 
+                info->rwall = dbgen_continue_then_init(&isdigit, *argv, &i); 
                 if ( (*argv)[i] == '.' ){
                     ++i; //skip dot
 
-                    char *leftover = continue_then_init(&isdigit, *argv, &i);
+                    char *leftover = dbgen_continue_then_init(&isdigit, *argv, &i);
                     if ( info->decimal_places < strlen(leftover) ){
                         info->decimal_places = strlen(leftover);
                     }
@@ -348,8 +356,8 @@ int def_field(char *argv[], t_colinfo *info, dbconfig* database)
             case ',':
                 ++i; // skip comma
 
-                info->amount = continue_then_init(&isdigit, *argv, &i); 
-                info->method |= Fix;
+                info->amount = dbgen_continue_then_init(&isdigit, *argv, &i); 
+                info->method |= DBGEN_FIXEDSIZE;
                 break;
             default:
                 if ( ! isgraph((*argv)[i]) ){
@@ -380,7 +388,8 @@ int def_field(char *argv[], t_colinfo *info, dbconfig* database)
     return Field;
 }
 
-int def_delim(char *argv[], t_colinfo *info, dbconfig* database)
+int
+dbgen_def_delim(char *argv[], t_colinfo *info, dbconfig* database)
 {
     if ( strlen(*argv) != 1 ){
         _error(ERR_READ, *argv);
@@ -406,7 +415,8 @@ int def_delim(char *argv[], t_colinfo *info, dbconfig* database)
     return Delim;
 }
 
-dbconfig *init_dbconfig()
+dbconfig*
+dbgen_init_dbconfig()
 {
     const dbconfig default_database = {
         .amt_row = 10, 
@@ -421,7 +431,8 @@ dbconfig *init_dbconfig()
     return new_database;
 }
 
-void destroy_dbconfig(dbconfig* database)
+void
+dbgen_destroy_dbconfig(dbconfig* database)
 {
     assert(database);
     if (database->out_stream != stdout)
